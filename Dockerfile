@@ -17,6 +17,7 @@ MAINTAINER Timothy St. Clair "tstclair@heptio.com"
 
 RUN apk update --no-cache && apk add ca-certificates
 ADD sonobuoy /sonobuoy 
+ADD battery.test /battery.test
 USER nobody:nobody
 
 CMD ["/bin/sh", "-c", "/sonobuoy -v 3 -logtostderr"]

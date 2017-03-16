@@ -13,7 +13,10 @@
 # limitations under the License.
 
 TARGET = sonobuoy
-BUILDMNT = /go/src/github.com/heptio/$(TARGET)
+TESTTARGET = battery.test
+GOTARGET = github.com/heptio/$(TARGET)
+TESTSRCS = $(GOTARGET)/pkg/battery
+BUILDMNT = /go/src/$(GOTARGET)
 REGISTRY ?= gcr.io/heptio-images
 VERSION ?= v0.1
 IMAGE = $(REGISTRY)/$(BIN)
@@ -21,10 +24,13 @@ BUILD_IMAGE ?= golang:1.7-alpine
 DOCKER ?= docker
 DIR := ${CURDIR}
 
-all: local container
-	
 local: 
-	$(DOCKER) run --rm -v $(DIR):$(BUILDMNT) -w $(BUILDMNT) $(BUILD_IMAGE) go build -v
+	go build -v && go test -i -c -o $(TESTTARGET) $(TESTSRCS)
+
+all: cbuild container
+
+cbuild: 
+	$(DOCKER) run --rm -v $(DIR):$(BUILDMNT) -w $(BUILDMNT) $(BUILD_IMAGE) go build -v && go test -i -c -o $(TESTTARGET) $(TESTSRCS)
 
 container:
 	$(DOCKER) build -t $(REGISTRY)/$(TARGET):latest -t $(REGISTRY)/$(TARGET):$(VERSION) .
@@ -33,9 +39,9 @@ container:
 push: 
 	docker -- push $(REGISTRY)/$(TARGET)
 
-.PHONY: all local container push
+.PHONY: all local container cbuild push
 
 clean: 
-	rm -f $(TARGET)
+	rm -f $(TARGET) $(TESTTARGET)
 	$(DOCKER) rmi $(REGISTRY)/$(TARGET):latest
 	$(DOCKER) rmi $(REGISTRY)/$(TARGET):$(VERSION)
