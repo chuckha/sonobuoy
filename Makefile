@@ -20,7 +20,10 @@ BUILDMNT = /go/src/$(GOTARGET)
 REGISTRY ?= gcr.io/heptio-images
 VERSION ?= v0.1
 IMAGE = $(REGISTRY)/$(BIN)
-BUILD_IMAGE ?= golang:1.7-alpine
+BUILD_IMAGE ?= golang:1.7
+# NOTE - the only reason we don't choose alpine is it's missing gcc deps 
+# properly compile and we'd need to update. https://github.com/docker-library/golang/issues/153 
+# BUILD_IMAGE ?= golang:1.7-alpine3.5
 DOCKER ?= docker
 DIR := ${CURDIR}
 

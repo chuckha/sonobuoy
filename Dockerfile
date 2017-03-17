@@ -12,13 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM alpine:3.4
+#FROM alpine:3.5
+FROM buildpack-deps:jessie-scm
 MAINTAINER Timothy St. Clair "tstclair@heptio.com"  
 
-RUN apk update --no-cache && apk add ca-certificates
+#RUN apk update --no-cache && apk add ca-certificates
 ADD sonobuoy /sonobuoy 
 ADD battery.test /battery.test
-USER nobody:nobody
+#USER nobody:nobody
 
 CMD ["/bin/sh", "-c", "/sonobuoy -v 3 -logtostderr"]
 
