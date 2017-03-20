@@ -23,6 +23,7 @@ import (
 	"syscall"
 
 	"github.com/golang/glog"
+	"github.com/heptio/sonobuoy/pkg/discovery"
 	"github.com/spf13/viper"
 
 	"k8s.io/client-go/kubernetes"
@@ -63,6 +64,10 @@ func loadConfig() kubernetes.Interface {
 	viper.AddConfigPath("/etc/sonobuoy/")
 	viper.AddConfigPath(".")
 	viper.SetDefault("kubeconfig", "")
+
+	// load the defaults for discovery
+	discovery.SetDefaults()
+
 	if err = viper.ReadInConfig(); err != nil {
 		panic(err.Error())
 	}
@@ -88,7 +93,11 @@ func loadConfig() kubernetes.Interface {
 
 // main entry point of the program
 func main() {
-
-	//clientset := loadConfig()
-
+	clientset := loadConfig()
+	if err := discovery.Run(clientset, sigHandler()); err != nil {
+		glog.Warningf("")
+		os.Exit(1)
+	} else {
+		os.Exit(0)
+	}
 }

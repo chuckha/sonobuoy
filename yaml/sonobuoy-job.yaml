@@ -31,10 +31,11 @@ spec:
           volumeMounts:
           - name: config-volume
             mountPath: /etc/sonobuoy
-          restartPolicy: Never
+      restartPolicy: Never
       volumes: 
         - name: config-volume
           configMap:
             name: sonobuoy-cm
-  
+
+# TODO - This will need a volume mount to record the data
  
