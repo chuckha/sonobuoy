@@ -65,9 +65,6 @@ func loadConfig() kubernetes.Interface {
 	viper.AddConfigPath(".")
 	viper.SetDefault("kubeconfig", "")
 
-	// load the defaults for discovery
-	discovery.SetDefaults()
-
 	if err = viper.ReadInConfig(); err != nil {
 		panic(err.Error())
 	}
@@ -95,7 +92,8 @@ func loadConfig() kubernetes.Interface {
 func main() {
 	clientset := loadConfig()
 	if err := discovery.Run(clientset, sigHandler()); err != nil {
-		glog.Warningf("")
+		// TODO: resolve the multiple errors problem
+		// glog.Warningf("")
 		os.Exit(1)
 	} else {
 		os.Exit(0)

@@ -13,29 +13,12 @@ Needless to say, there are a plethora of solutions that exist today, but there i
 ## Goals
 This gap in cluster health and analysis, is the primary role that sonobuoy aims to fill.  In essence, Sonobouy is an operator tool for inspecting a cluster’s configuration and analyzing its behavioral characteristics, e.g.:   
 
-Cluster Introspection
-Environment? (GCE, DO, AWS) 
-Machine(s)
-Size and number
-Base OS
-Docker/dependency versions
-Component Configuration
-1.7 push on Config Maps
-Topology of add-ons
-Networking and DNS Configuration(s)
-Security Contexts & Profiles?
-Behavioral Examination
-Cluster conformance 
-Still a WIP - https://github.com/kubernetes/community/issues/432
-Characterizing performance against established benchmarks
-Metrics Gathering
+TODO: List more details and link to configuration settings as we are further down the road.
 
 ## Non-goals:
 Make julian fries!  
 
 # Building 
-TODO: I'm creating patterns here, I should breakdown the base and template stamp it. 
-
 You can build and test either as a standalone go application or as a Docker container.
 
 ## Standalone:
@@ -54,7 +37,7 @@ $ sudo make all
 Assuming your testing on a local cluster, it will use the local `config.json`, which 
 you can override.
 ```
-$ ./eventrouter -v 3 -logtostderr 
+$ ./sonobuoy -v 3 -logtostderr 
 ```
 
 ## On the cluster 

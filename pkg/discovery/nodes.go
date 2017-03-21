@@ -25,15 +25,28 @@ import (
 	"k8s.io/client-go/kubernetes"
 )
 
+// NodeDC is the
+type NodeDC struct {
+	collectBasicNodeData bool
+	// TODO: Add other params that we will switch on.
+}
+
 // CollectNodeData will call out to the api-server and collect node data
-func CollectNodeData(kubeClient kubernetes.Interface) error {
-	nodelist, err := kubeClient.CoreV1().Nodes().List(metav1.ListOptions{})
-	if err == nil {
-		for i, node := range nodelist.Items {
-			if eJSONBytes, err := json.Marshal(node); err == nil {
-				glog.Info("NODE(%v)\n%v", i, string(eJSONBytes))
-			} else {
-				glog.Warningf("Failed to json serialize node: %v", err)
+func CollectNodeData(kubeClient kubernetes.Interface, ndc *NodeDC) error {
+	var err error
+	if ndc.collectBasicNodeData {
+		glog.Info("Collecting Node Data...")
+		nodelist, err := kubeClient.CoreV1().Nodes().List(metav1.ListOptions{})
+		if err == nil {
+			for i, node := range nodelist.Items {
+
+				// TODO: We'll need to add more analysis
+				if eJSONBytes, err := json.Marshal(node); err == nil {
+					// TODO: need to write output file
+					glog.Infof("NODE(%v)\n%v", i, string(eJSONBytes))
+				} else {
+					glog.Warningf("Failed to json serialize node: %v", err)
+				}
 			}
 		}
 	}

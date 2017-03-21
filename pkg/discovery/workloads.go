@@ -14,20 +14,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package battery
+package discovery
 
-import (
-	"testing"
+import ()
 
-	"k8s.io/kubernetes/test/e2e"
-	"k8s.io/kubernetes/test/e2e/framework"
-	_ "k8s.io/kubernetes/test/e2e/scheduling"
-)
-
-func init() {
-	framework.ViperizeFlags()
-}
-
-func TestE2E(t *testing.T) {
-	e2e.RunE2ETests(t)
-}
+type Workloads struct{}
