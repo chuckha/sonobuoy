@@ -91,9 +91,10 @@ func loadConfig() kubernetes.Interface {
 // main entry point of the program
 func main() {
 	clientset := loadConfig()
-	if err := discovery.Run(clientset, sigHandler()); err != nil {
-		// TODO: resolve the multiple errors problem
-		// glog.Warningf("")
+	if errlist := discovery.Run(clientset, sigHandler()); errlist != nil {
+		for _, err := range errlist {
+			glog.Errorf("Error (%v)", err)
+		}
 		os.Exit(1)
 	} else {
 		os.Exit(0)

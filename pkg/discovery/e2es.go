@@ -16,8 +16,17 @@ limitations under the License.
 
 package discovery
 
-import ()
+import (
+	"github.com/golang/glog"
+)
 
-type E2eDC struct{}
+// kicker for e2es, look at discovery.
+func rune2e(outpath string, dc *DiscoveryConfig) error {
+	var err error
+	// call battery.test with a valid set of args to output into the directory
+	if dc.runtests {
+		glog.Info("Running tests...")
+	}
 
-// TODO: Sort through the xHundred e2es and start to execute away.
+	return err
+}
