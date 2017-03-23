@@ -28,6 +28,7 @@ import (
 	"github.com/satori/go.uuid"
 
 	"io/ioutil"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 )
@@ -124,7 +125,7 @@ func Run(kubeClient kubernetes.Interface, stopCh <-chan struct{}) []error {
 
 	// 2. Create the directory which wil store the results
 	outpath := dc.resultsDir + "/" + dc.UUID
-	err := os.Mkdir(outpath, 0755)
+	err := os.MkdirAll(outpath, 0755)
 	if err != nil {
 		panic(err.Error())
 	}
@@ -171,7 +172,7 @@ func LoadDiscoveryConfig() *DiscoveryConfig {
 	glog.Infof("Loading Config...")
 	dc := &DiscoveryConfig{
 		UUID:                uuid.NewV4().String(),
-		resultsDir:          ".",
+		resultsDir:          "./results",
 		runtests:            true,
 		testFocusRegex:      "Conformance",
 		testSkipRegex:       "Serial|Alpha",

@@ -65,6 +65,9 @@ func loadConfig() kubernetes.Interface {
 	viper.AddConfigPath(".")
 	viper.SetDefault("kubeconfig", "")
 
+	// Makes it so the KUBECONFIG env var overrides where we look for kubeconfig
+	viper.BindEnv("kubeconfig")
+
 	if err = viper.ReadInConfig(); err != nil {
 		panic(err.Error())
 	}
