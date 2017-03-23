@@ -25,3 +25,9 @@ _testmain.go
 
 sonobuoy
 battery.test
+
+# Created by delve
+debug
+
+# we output results to this directory by default
+results

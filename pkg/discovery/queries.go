@@ -23,63 +23,42 @@ import (
 
 	"github.com/golang/glog"
 
-	"k8s.io/apimachinery/pkg/api/meta"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
 )
 
-// Lister is used for
-type Lister func() (runtime.Object, error)
+// Lister is something that can enumerate any array of results that can be
+// dumped as json (so, any object really)
+type Lister func() ([]interface{}, error)
 
-func createresults(outpath string, file string, test bool, err error, f Lister) error {
-	if test && err == nil {
-		listObj, err := f()
-		if err == nil && listObj != nil {
-			listPtr, err := meta.GetItemsPtr(listObj)
-			if err == nil && listPtr != nil {
-				if err = os.Mkdir(outpath, 0755); err == nil {
-					if eJSONBytes, err := json.Marshal(listPtr); err == nil {
-						glog.V(5).Infof("%v", string(eJSONBytes))
-						err = ioutil.WriteFile(outpath+"/"+file, eJSONBytes, 0644)
-					}
-				}
+func createresults(outpath string, file string, condition bool, f Lister) error {
+	// Short-circuit early if we're not configured to gather these results
+	if !condition {
+		return nil
+	}
+
+	listObj, err := f()
+	if err == nil && listObj != nil {
+		if err = os.Mkdir(outpath, 0755); err == nil {
+			if eJSONBytes, err := json.Marshal(listObj); err == nil {
+				glog.V(5).Infof("%v", string(eJSONBytes))
+				err = ioutil.WriteFile(outpath+"/"+file, eJSONBytes, 0644)
 			}
 		}
 	}
 	return err
 }
 
+// QueryNSResources writes out json files for namespaced resources in the cluster (pods, etc.)
 func QueryNSResources(kubeClient kubernetes.Interface, outpath string, ns string, dc *DiscoveryConfig) error {
 	glog.Infof("Running ns query (%v)", ns)
 	return nil
 }
 
+// QueryNonNSResources writes out json files for non-namespaced resources in the cluster.
 func QueryNonNSResources(kubeClient kubernetes.Interface, outpath string, dc *DiscoveryConfig) error {
 	var err error
-
 	glog.Infof("Running non-ns query")
-	f := func() (runtime.Object, error) { return kubeClient.CoreV1().Nodes().List(metav1.ListOptions{}) }
-	err = createresults(outpath+"/nodes", "nodes.json", dc.nodes, err, f)
 
+	err = gatherNodeData(kubeClient, outpath, dc)
 	return err
 }
-
-/*
-	if dc.nodes {
-		glog.Info("Collecting Node Data...")
-		nodelist, err :=
-		if err == nil {
-			for i, node := range nodelist.Items {
-				// TODO: We'll need to add more analysis
-				if eJSONBytes, err := json.Marshal(node); err == nil {
-					// TODO: need to write output file
-					glog.Infof("NODE(%v)\n%v", i, string(eJSONBytes))
-				} else {
-					glog.Warningf("Failed to json serialize node: %v", err)
-				}
-			}
-		}
-	}
-	return nil
-*/
