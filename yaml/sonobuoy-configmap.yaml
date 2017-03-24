@@ -18,6 +18,7 @@ data:
     {
       "default": "params"
     }
+# TODO: Comment block with the list of options.
 kind: ConfigMap
 metadata:
   name: sonobuoy-cm

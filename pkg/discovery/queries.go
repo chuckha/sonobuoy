@@ -30,6 +30,11 @@ import (
 	"k8s.io/client-go/kubernetes"
 )
 
+// TODO:
+// 1. This will change quite a bit once we have conversion from bool <> string
+// 2. Pass back errors through channel
+// 3. map of name<>function.
+
 // Lister is something that can enumerate any array of results that can be
 // dumped as json (so, any object really)
 type Lister func() (runtime.Object, error)

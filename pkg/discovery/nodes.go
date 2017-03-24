@@ -53,6 +53,8 @@ func createresults(outpath string, file string, condition bool, f ListerA) error
 	return err
 }
 
+// TODO: Determine if it makes sense to reuse for masters.
+
 func gatherNodeData(kubeClient kubernetes.Interface, outpath string, dc *Config) error {
 	f := func() ([]interface{}, error) {
 		glog.Info("Collecting Node Data...")

@@ -23,7 +23,7 @@ import (
 // kicker for e2es, look at discovery.
 func rune2e(outpath string, dc *Config) error {
 	var err error
-	// call battery.test with a valid set of args to output into the directory
+	// TODO: call battery.test with a valid set of args to output into the directory
 	if dc.Runtests {
 		glog.Info("Running tests...")
 	}

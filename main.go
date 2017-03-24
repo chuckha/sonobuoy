@@ -50,6 +50,7 @@ func sigHandler() <-chan struct{} {
 	return stop
 }
 
+// TODO: Combine into discovery.LoadConfig just to make it consistent.
 // loadConfig will parse input + config file and return a clientset
 func loadConfig() kubernetes.Interface {
 	var config *rest.Config
