@@ -96,7 +96,7 @@ func main() {
 	clientset := loadConfig()
 	if errlist := discovery.Run(clientset, sigHandler()); errlist != nil {
 		for _, err := range errlist {
-			glog.Errorf("Error (%v)", err)
+			glog.Errorf("%v", err)
 		}
 		os.Exit(1)
 	} else {

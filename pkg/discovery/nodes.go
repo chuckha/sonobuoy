@@ -18,6 +18,8 @@ package discovery
 
 import (
 	"encoding/json"
+	"io/ioutil"
+	"os"
 	"strings"
 
 	"github.com/golang/glog"
@@ -31,7 +33,27 @@ type nodeData struct {
 	ConfigzOutput map[string]interface{} `json:"configzOutput"`
 }
 
-func gatherNodeData(kubeClient kubernetes.Interface, outpath string, dc *DiscoveryConfig) error {
+type ListerA func() ([]interface{}, error)
+
+func createresults(outpath string, file string, condition bool, f ListerA) error {
+	// Short-circuit early if we're not configured to gather these results
+	if !condition {
+		return nil
+	}
+
+	listObj, err := f()
+	if err == nil && listObj != nil {
+		if err = os.Mkdir(outpath, 0755); err == nil {
+			if eJSONBytes, err := json.Marshal(listObj); err == nil {
+				glog.V(5).Infof("%v", string(eJSONBytes))
+				err = ioutil.WriteFile(outpath+"/"+file, eJSONBytes, 0644)
+			}
+		}
+	}
+	return err
+}
+
+func gatherNodeData(kubeClient kubernetes.Interface, outpath string, dc *Config) error {
 	f := func() ([]interface{}, error) {
 		glog.Info("Collecting Node Data...")
 		nodelist, err := kubeClient.CoreV1().Nodes().List(metav1.ListOptions{})
@@ -67,5 +89,5 @@ func gatherNodeData(kubeClient kubernetes.Interface, outpath string, dc *Discove
 		return results, nil
 	}
 
-	return createresults(outpath+"/nodes", "nodes.json", dc.nodes, f)
+	return createresults(outpath+"/nodes", "nodes.json", dc.Nodes, f)
 }
