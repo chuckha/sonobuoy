@@ -25,6 +25,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 )
 
+// TODO: What's the easiest consumable for users to filter on, regex or...?
 // FilterNamespaces filter the list of namespaces according to the filter string
 func FilterNamespaces(kubeClient kubernetes.Interface, filter string) []string {
 	var validns []string

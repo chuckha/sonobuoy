@@ -76,10 +76,11 @@ type Config struct {
 	Nodes             bool `json:"nodes"`
 
 	// TODOs:
-	// 1. Add support for label selection?
-	// 2. Pod RegEx query? (workload issue)
-	// 3. Other api-types.
-	// 4. Pass in []string of resources vs. bool festivus?
+	// 1. Convert to []string of resources vs. for easier processing.
+	// 2. Master component /configz
+	// 3. Add support for label selection? (Whitelist, Blacklist)
+	// 4. Pod RegEx query? (workload issue)
+	// 5. Other api-types.
 }
 
 // LoadConfig unmarshals the viper config

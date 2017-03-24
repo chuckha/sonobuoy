@@ -34,6 +34,7 @@ func Run(kubeClient kubernetes.Interface, stopCh <-chan struct{}) []error {
 	var errlst []error
 	done := make(chan struct{})
 
+	// TODO - This will be in main and passed in.
 	// 0. Load the config
 	dc := LoadConfig()
 
@@ -54,6 +55,10 @@ func Run(kubeClient kubernetes.Interface, stopCh <-chan struct{}) []error {
 		}
 	}
 
+	// TODO: Have consistency on error reporting.
+	// Gather as many errors as possible get as far as we can, but only dump on success.
+	// Errors should not be in-band.
+
 	// 5. Launch queries concurrently
 	wg.Add(len(nslist) + 2)
 	spawn := func(err error) {
@@ -68,6 +73,9 @@ func Run(kubeClient kubernetes.Interface, stopCh <-chan struct{}) []error {
 		wg.Wait()
 		close(done)
 	}
+
+	// TODO: Determine the level of parallelism we consider acceptable.
+	// We can be throttled by the client to just let loose queries and channel back errors.
 	go spawn(QueryNonNSResources(kubeClient, outpath, dc))
 	for _, ns := range nslist {
 		go spawn(QueryNSResources(kubeClient, outpath, ns, dc))
