@@ -39,7 +39,7 @@ func gatherNodeData(kubeClient kubernetes.Interface, outpath string, dc *Discove
 			return nil, err
 		}
 
-		results := make([]interface{}, nodelist.Size())
+		results := make([]interface{}, len(nodelist.Items))
 		for i, node := range nodelist.Items {
 			var configz map[string]interface{}
 
