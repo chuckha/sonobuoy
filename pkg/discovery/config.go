@@ -17,9 +17,18 @@ limitations under the License.
 package discovery
 
 import (
-	"github.com/golang/glog"
+	"flag"
 	"github.com/satori/go.uuid"
-	//"github.com/spf13/viper"
+	"github.com/spf13/viper"
+
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
+	"k8s.io/client-go/tools/clientcmd"
+)
+
+const (
+	// DiscoveryConfigKey is the default key used to
+	DiscoveryConfigKey = "sonobuoy"
 )
 
 // Config is the input struct used to determine what data to collect
@@ -28,12 +37,12 @@ type Config struct {
 	UUID string `json:"UUID"`
 
 	// Location to store the output results
-	ResultsDir string `json:"resultsDir"`
+	ResultsDir string `json:"resultsdir"`
 
 	// regex filters for e2es
 	Runtests       bool   `json:"runtests"`
-	TestFocusRegex string `json:"testFocusRegex"`
-	TestSkipRegex  string `json:"testSkipRegex"`
+	TestFocusRegex string `json:"testfocusregex"`
+	TestSkipRegex  string `json:"testskipregex"`
 
 	// regex to define namespace collection default=*
 	Namespaces string `json:"namespaces"`
@@ -42,37 +51,37 @@ type Config struct {
 	// certificatesigningrequests bool
 	// clusters				bool
 	// networkpolicies          bool `json:"networkpolicies"`
-	Clusterrolebindings      bool `json:"clusterrolebindings"`
-	Clusterroles             bool `json:"clusterroles"`
-	Componentstatuses        bool `json:"componentstatuses"`
-	Configmaps               bool `json:"configmaps"`
-	Daemonsets               bool `json:"daemonsets"`
+	ClusterRoleBindings      bool `json:"clusterrolebindings"`
+	ClusterRoles             bool `json:"clusterroles"`
+	ComponentStatuses        bool `json:"componentstatuses"`
+	ConfigMaps               bool `json:"configmaps"`
+	DaemonSets               bool `json:"daemonsets"`
 	Deployments              bool `json:"deployments"`
 	Endpoints                bool `json:"endpoints"`
 	Events                   bool `json:"events"`
-	Horizontalpodautoscalers bool `json:"horizontalpodautoscalers"`
+	HorizontalPodAutoscalers bool `json:"horizontalpodautoscalers"`
 	Ingresses                bool `json:"ingresses"`
 	Jobs                     bool `json:"jobs"`
-	Limitranges              bool `json:"limitranges"`
-	Persistentvolumeclaims   bool `json:"persistentvolumeclaims"`
+	LimitRanges              bool `json:"limitranges"`
+	PersistentVolumeClaims   bool `json:"persistentvolumeclaims"`
 	Pods                     bool `json:"pods"`
-	Poddisruptionbudgets     bool `json:"poddisruptionbudgets"`
-	Podsecuritypolicies      bool `json:"podsecuritypolicies"`
-	Podtemplates             bool `json:"podtemplates"`
-	Replicasets              bool `json:"replicasets"`
-	Replicationcontrollers   bool `json:"replicationcontrollers"`
-	Resourcequotas           bool `json:"resourcequotas"`
-	Rolebindings             bool `json:"rolebindings"`
+	PodDisruptionBudgets     bool `json:"poddisruptionbudgets"`
+	PodSecurityPolicies      bool `json:"podsecuritypolicies"`
+	PodTemplates             bool `json:"podtemplates"`
+	ReplicaSets              bool `json:"replicasets"`
+	ReplicationControllers   bool `json:"replicationcontrollers"`
+	ResourceQuotas           bool `json:"resourcequotas"`
+	RoleBindings             bool `json:"rolebindings"`
 	Roles                    bool `json:"roles"`
 	Secrets                  bool `json:"secrets"`
-	Serviceaccounts          bool `json:"serviceaccounts"`
+	ServiceAccounts          bool `json:"serviceaccounts"`
 	Services                 bool `json:"services"`
-	Statefulsets             bool `json:"statefulsets"`
-	Storageclasses           bool `json:"storageclasses"`
-	Thirdpartyresources      bool `json:"thirdpartyresources"`
+	StatefulSets             bool `json:"statefulsets"`
+	StorageClasses           bool `json:"storageclasses"`
+	ThirdPartyResources      bool `json:"thirdpartyresources"`
 
 	// Non-NSScoped.
-	Persistentvolumes bool `json:"persistentvolumes"`
+	PersistentVolumes bool `json:"persistentvolumes"`
 	Nodes             bool `json:"nodes"`
 
 	// TODOs:
@@ -83,48 +92,87 @@ type Config struct {
 	// 5. Other api-types.
 }
 
-// LoadConfig unmarshals the viper config
-func LoadConfig() *Config {
-	glog.Infof("Loading Config...")
-	dc := &Config{
-		UUID:                uuid.NewV4().String(),
-		ResultsDir:          "./results",
-		Runtests:            true,
-		TestFocusRegex:      "Conformance",
-		TestSkipRegex:       "Alpha|Disruptive|Feature|Flaky|Serial",
-		Namespaces:          ".*",
-		Clusterrolebindings: true,
-		Clusterroles:        true,
-		Componentstatuses:   true,
-		Configmaps:          true,
-		Daemonsets:          true,
-		Deployments:         true,
-		Endpoints:           true,
-		Events:              true,
-		Horizontalpodautoscalers: true,
-		Ingresses:                true,
-		Jobs:                     true,
-		Limitranges:              true,
-		Nodes:                    true,
-		Persistentvolumeclaims: true,
-		Persistentvolumes:      true,
-		Pods:                   true,
-		Poddisruptionbudgets:   true,
-		Podsecuritypolicies:    true,
-		Podtemplates:           true,
-		Replicasets:            true,
-		Replicationcontrollers: true,
-		Resourcequotas:         true,
-		Rolebindings:           true,
-		Roles:                  true,
-		Secrets:                false,
-		Serviceaccounts:        true,
-		Services:               true,
-		Statefulsets:           true,
-		Storageclasses:         true,
-		Thirdpartyresources:    true,
+// SetConfigDefaults sets up the defaults in case input is sparse.
+func SetConfigDefaults(dc *Config) {
+	dc.UUID = uuid.NewV4().String()
+	dc.ResultsDir = "./results"
+	dc.Runtests = false
+	dc.TestFocusRegex = "Conformance"
+	dc.TestSkipRegex = "Alpha|Disruptive|Feature|Flaky|Serial"
+	dc.Namespaces = ".*"
+	dc.ClusterRoleBindings = true
+	dc.ClusterRoles = true
+	dc.ComponentStatuses = true
+	dc.ConfigMaps = true
+	dc.DaemonSets = true
+	dc.Deployments = true
+	dc.Endpoints = true
+	dc.Events = true
+	dc.HorizontalPodAutoscalers = true
+	dc.Ingresses = true
+	dc.Jobs = true
+	dc.LimitRanges = true
+	dc.Nodes = true
+	dc.PersistentVolumeClaims = true
+	dc.PersistentVolumes = true
+	dc.Pods = true
+	dc.PodDisruptionBudgets = true
+	dc.PodSecurityPolicies = true
+	dc.PodTemplates = true
+	dc.ReplicaSets = true
+	dc.ReplicationControllers = true
+	dc.ResourceQuotas = true
+	dc.RoleBindings = true
+	dc.Roles = true
+	dc.Secrets = false
+	dc.ServiceAccounts = true
+	dc.Services = true
+	dc.StatefulSets = true
+	dc.StorageClasses = true
+	dc.ThirdPartyResources = true
+}
+
+// LoadConfig will parse input + config file and return a clientset, and config
+func LoadConfig() (kubernetes.Interface, *Config) {
+	var config *rest.Config
+	var err error
+	var dc Config
+
+	// 0 - load defaults
+	flag.Parse()
+	viper.SetConfigType("json")
+	viper.SetConfigName("config")
+	viper.AddConfigPath("/etc/" + DiscoveryConfigKey + "/")
+	viper.AddConfigPath(".")
+	viper.SetDefault("kubeconfig", "")
+	viper.BindEnv("kubeconfig")
+	SetConfigDefaults(&dc)
+
+	// 1 - Read in the config file.
+	if err = viper.ReadInConfig(); err != nil {
+		panic(err.Error())
 	}
 
-	// TODO: Need to resolve the viper config
-	return dc
+	// 2 - Unmarshal the Config struct
+	if err = viper.UnmarshalKey(DiscoveryConfigKey, &dc); err != nil {
+		panic(err.Error())
+	}
+
+	// 3 - gather config information used to initialize
+	kubeconfig := viper.GetString("kubeconfig")
+	if len(kubeconfig) > 0 {
+		config, err = clientcmd.BuildConfigFromFlags("", kubeconfig)
+	} else {
+		config, err = rest.InClusterConfig()
+	}
+	if err != nil {
+		panic(err.Error())
+	}
+
+	// 4 - creates the clientset from kubeconfig
+	clientset, err := kubernetes.NewForConfig(config)
+	if err != nil {
+		panic(err.Error())
+	}
+	return clientset, &dc
 }

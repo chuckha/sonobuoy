@@ -17,18 +17,12 @@ limitations under the License.
 package main
 
 import (
-	"flag"
 	"os"
 	"os/signal"
 	"syscall"
 
 	"github.com/golang/glog"
 	"github.com/heptio/sonobuoy/pkg/discovery"
-	"github.com/spf13/viper"
-
-	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/rest"
-	"k8s.io/client-go/tools/clientcmd"
 )
 
 // setup a signal hander to gracefully exit
@@ -50,52 +44,9 @@ func sigHandler() <-chan struct{} {
 	return stop
 }
 
-// TODO: Combine into discovery.LoadConfig just to make it consistent.
-// loadConfig will parse input + config file and return a clientset
-func loadConfig() kubernetes.Interface {
-	var config *rest.Config
-	var err error
-
-	flag.Parse()
-
-	// leverages a file|(ConfigMap)
-	// to be located at /etc/sonobuoy/config
-	viper.SetConfigType("json")
-	viper.SetConfigName("config")
-	viper.AddConfigPath("/etc/sonobuoy/")
-	viper.AddConfigPath(".")
-	viper.SetDefault("kubeconfig", "")
-
-	// Makes it so the KUBECONFIG env var overrides where we look for kubeconfig
-	viper.BindEnv("kubeconfig")
-
-	if err = viper.ReadInConfig(); err != nil {
-		panic(err.Error())
-	}
-
-	// allows for running both in & out of cluster
-	kubeconfig := viper.GetString("kubeconfig")
-	if len(kubeconfig) > 0 {
-		config, err = clientcmd.BuildConfigFromFlags("", kubeconfig)
-	} else {
-		config, err = rest.InClusterConfig()
-	}
-	if err != nil {
-		panic(err.Error())
-	}
-
-	// creates the clientset from kubeconfig
-	clientset, err := kubernetes.NewForConfig(config)
-	if err != nil {
-		panic(err.Error())
-	}
-	return clientset
-}
-
 // main entry point of the program
 func main() {
-	clientset := loadConfig()
-	if errlist := discovery.Run(clientset, sigHandler()); errlist != nil {
+	if errlist := discovery.Run(sigHandler()); errlist != nil {
 		for _, err := range errlist {
 			glog.Errorf("%v", err)
 		}

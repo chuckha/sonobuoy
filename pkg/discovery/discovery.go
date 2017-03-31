@@ -21,14 +21,10 @@ import (
 	"io/ioutil"
 	"os"
 	"sync"
-
-	//"github.com/golang/glog"
-
-	"k8s.io/client-go/kubernetes"
 )
 
 // Run is the main entrypoint for discovery
-func Run(kubeClient kubernetes.Interface, stopCh <-chan struct{}) []error {
+func Run(stopCh <-chan struct{}) []error {
 	var wg sync.WaitGroup
 	var m sync.Mutex
 	var errlst []error
@@ -36,7 +32,7 @@ func Run(kubeClient kubernetes.Interface, stopCh <-chan struct{}) []error {
 
 	// TODO - This will be in main and passed in.
 	// 0. Load the config
-	dc := LoadConfig()
+	kubeClient, dc := LoadConfig()
 
 	// 1. Get the list of namespaces and apply the regex filter on the namespace
 	nslist := FilterNamespaces(kubeClient, dc.Namespaces)
