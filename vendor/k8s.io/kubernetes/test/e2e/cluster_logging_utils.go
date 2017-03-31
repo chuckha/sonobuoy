@@ -33,7 +33,7 @@ import (
 
 const (
 	// Duration of delay between any two attempts to check if all logs are ingested
-	ingestionRetryDelay = 10 * time.Second
+	ingestionRetryDelay = 100 * time.Second
 
 	// Amount of requested cores for logging container in millicores
 	loggingContainerCpuRequest = 10
@@ -141,7 +141,41 @@ func createLogsGeneratorPod(f *framework.Framework, podName string, linesCount i
 	})
 }
 
-func waitForLogsIngestion(f *framework.Framework, config *loggingTestConfig) error {
+func waitForSomeLogs(f *framework.Framework, config *loggingTestConfig) error {
+	podHasIngestedLogs := make([]bool, len(config.Pods))
+	podWithIngestedLogsCount := 0
+
+	for start := time.Now(); podWithIngestedLogsCount < len(config.Pods) && time.Since(start) < config.IngestionTimeout; time.Sleep(ingestionRetryDelay) {
+		for podIdx, pod := range config.Pods {
+			if podHasIngestedLogs[podIdx] {
+				continue
+			}
+
+			entries := config.LogsProvider.ReadEntries(pod)
+			if len(entries) == 0 {
+				framework.Logf("No log entries from pod %s", pod.Name)
+				continue
+			}
+
+			for _, entry := range entries {
+				if _, ok := entry.getLogEntryNumber(); ok {
+					framework.Logf("Found some log entries from pod %s", pod.Name)
+					podHasIngestedLogs[podIdx] = true
+					podWithIngestedLogsCount++
+					break
+				}
+			}
+		}
+	}
+
+	if podWithIngestedLogsCount < len(config.Pods) {
+		return fmt.Errorf("some logs were ingested for %d pods out of %d", podWithIngestedLogsCount, len(config.Pods))
+	}
+
+	return nil
+}
+
+func waitForFullLogsIngestion(f *framework.Framework, config *loggingTestConfig) error {
 	expectedLinesNumber := 0
 	for _, pod := range config.Pods {
 		expectedLinesNumber += pod.ExpectedLinesNumber
@@ -248,6 +282,31 @@ func getMissingLinesCount(logsProvider logsProvider, pod *loggingPod) (int, erro
 	}
 
 	return pod.ExpectedLinesNumber - len(pod.Occurrences), nil
+}
+
+func ensureSingleFluentdOnEachNode(f *framework.Framework, fluentdApplicationName string) error {
+	fluentdPodList, err := getFluentdPods(f, fluentdApplicationName)
+	if err != nil {
+		return err
+	}
+
+	fluentdPodsPerNode := make(map[string]int)
+	for _, fluentdPod := range fluentdPodList.Items {
+		fluentdPodsPerNode[fluentdPod.Spec.NodeName]++
+	}
+
+	nodeList := framework.GetReadySchedulableNodesOrDie(f.ClientSet)
+	for _, node := range nodeList.Items {
+		fluentdPodCount, ok := fluentdPodsPerNode[node.Name]
+
+		if !ok {
+			return fmt.Errorf("node %s doesn't have fluentd instance", node.Name)
+		} else if fluentdPodCount != 1 {
+			return fmt.Errorf("node %s contains %d fluentd instaces, expected exactly one", node.Name, fluentdPodCount)
+		}
+	}
+
+	return nil
 }
 
 func getFluentdPods(f *framework.Framework, fluentdApplicationName string) (*api_v1.PodList, error) {

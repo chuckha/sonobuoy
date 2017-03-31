@@ -21,6 +21,8 @@ import (
 	"io/ioutil"
 	"os"
 	"sync"
+
+	"github.com/viniciuschiele/tarx"
 )
 
 // Run is the main entrypoint for discovery
@@ -83,6 +85,16 @@ func Run(stopCh <-chan struct{}) []error {
 	select {
 	case <-stopCh:
 	case <-done:
+	}
+
+	//7. tarball up results
+	tb := dc.ResultsDir + "/sonobuoy_" + dc.UUID + ".tar.gz"
+	err = tarx.Compress(tb, outpath, &tarx.CompressOptions{Compression: tarx.Gzip})
+	if err == nil {
+		err = os.RemoveAll(outpath)
+	}
+	if err != nil {
+		errlst = append(errlst, err)
 	}
 
 	return errlst
