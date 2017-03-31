@@ -73,13 +73,13 @@ func QueryNSResources(kubeClient kubernetes.Interface, outpath string, ns string
 	f := func() (runtime.Object, error) {
 		return kubeClient.CoreV1().ConfigMaps(ns).List(metav1.ListOptions{})
 	}
-	err = listquery(outdir+"/configmaps", "configmaps.json", dc.Configmaps, err, f)
+	err = listquery(outdir+"/configmaps", "configmaps.json", dc.ConfigMaps, err, f)
 
 	// grab daemonsets
 	f = func() (runtime.Object, error) {
 		return kubeClient.Extensions().DaemonSets(ns).List(metav1.ListOptions{})
 	}
-	err = listquery(outdir+"/daemonsets", "daemonsets.json", dc.Daemonsets, err, f)
+	err = listquery(outdir+"/daemonsets", "daemonsets.json", dc.DaemonSets, err, f)
 
 	// grab deployments
 	f = func() (runtime.Object, error) {
@@ -103,7 +103,7 @@ func QueryNSResources(kubeClient kubernetes.Interface, outpath string, ns string
 	f = func() (runtime.Object, error) {
 		return kubeClient.Autoscaling().HorizontalPodAutoscalers(ns).List(metav1.ListOptions{})
 	}
-	err = listquery(outdir+"/horizontalpodautoscalers", "horizontalpodautoscalers.json", dc.Horizontalpodautoscalers, err, f)
+	err = listquery(outdir+"/horizontalpodautoscalers", "horizontalpodautoscalers.json", dc.HorizontalPodAutoscalers, err, f)
 
 	// grab ingresses
 	f = func() (runtime.Object, error) {
@@ -121,7 +121,7 @@ func QueryNSResources(kubeClient kubernetes.Interface, outpath string, ns string
 	f = func() (runtime.Object, error) {
 		return kubeClient.CoreV1().LimitRanges(ns).List(metav1.ListOptions{})
 	}
-	err = listquery(outdir+"/limitranges", "limitranges.json", dc.Limitranges, err, f)
+	err = listquery(outdir+"/limitranges", "limitranges.json", dc.LimitRanges, err, f)
 
 	/* grab networkpolicies
 	f = func() (runtime.Object, error) {
@@ -134,7 +134,7 @@ func QueryNSResources(kubeClient kubernetes.Interface, outpath string, ns string
 	f = func() (runtime.Object, error) {
 		return kubeClient.CoreV1().PersistentVolumeClaims(ns).List(metav1.ListOptions{})
 	}
-	err = listquery(outdir+"/persistentvolumeclaims", "persistentvolumeclaims.json", dc.Persistentvolumeclaims, err, f)
+	err = listquery(outdir+"/persistentvolumeclaims", "persistentvolumeclaims.json", dc.PersistentVolumeClaims, err, f)
 
 	// grab pods
 	f = func() (runtime.Object, error) {
@@ -146,37 +146,37 @@ func QueryNSResources(kubeClient kubernetes.Interface, outpath string, ns string
 	f = func() (runtime.Object, error) {
 		return kubeClient.Policy().PodDisruptionBudgets(ns).List(metav1.ListOptions{})
 	}
-	err = listquery(outdir+"/poddisruptionbudgets", "poddisruptionbudgets.json", dc.Poddisruptionbudgets, err, f)
+	err = listquery(outdir+"/poddisruptionbudgets", "poddisruptionbudgets.json", dc.PodDisruptionBudgets, err, f)
 
 	// grab podtemplates
 	f = func() (runtime.Object, error) {
 		return kubeClient.CoreV1().PodTemplates(ns).List(metav1.ListOptions{})
 	}
-	err = listquery(outdir+"/podtemplates", "podtemplates.json", dc.Podtemplates, err, f)
+	err = listquery(outdir+"/podtemplates", "podtemplates.json", dc.PodTemplates, err, f)
 
 	// grab replicasets
 	f = func() (runtime.Object, error) {
 		return kubeClient.Extensions().ReplicaSets(ns).List(metav1.ListOptions{})
 	}
-	err = listquery(outdir+"/replicasets", "replicasets.json", dc.Replicasets, err, f)
+	err = listquery(outdir+"/replicasets", "replicasets.json", dc.ReplicaSets, err, f)
 
 	// grab replicationcontrollers
 	f = func() (runtime.Object, error) {
 		return kubeClient.CoreV1().ReplicationControllers(ns).List(metav1.ListOptions{})
 	}
-	err = listquery(outdir+"/replicationcontrollers", "replicationcontrollers.json", dc.Replicationcontrollers, err, f)
+	err = listquery(outdir+"/replicationcontrollers", "replicationcontrollers.json", dc.ReplicationControllers, err, f)
 
 	// grab resourcequotas
 	f = func() (runtime.Object, error) {
 		return kubeClient.CoreV1().ResourceQuotas(ns).List(metav1.ListOptions{})
 	}
-	err = listquery(outdir+"/resourcequotas", "resourcequotas.json", dc.Resourcequotas, err, f)
+	err = listquery(outdir+"/resourcequotas", "resourcequotas.json", dc.ResourceQuotas, err, f)
 
 	// grab rolebindings
 	f = func() (runtime.Object, error) {
 		return kubeClient.Rbac().RoleBindings(ns).List(metav1.ListOptions{})
 	}
-	err = listquery(outdir+"/rolebindings", "rolebindings.json", dc.Rolebindings, err, f)
+	err = listquery(outdir+"/rolebindings", "rolebindings.json", dc.RoleBindings, err, f)
 
 	// grab roles
 	f = func() (runtime.Object, error) {
@@ -194,11 +194,11 @@ func QueryNSResources(kubeClient kubernetes.Interface, outpath string, ns string
 	f = func() (runtime.Object, error) {
 		return kubeClient.CoreV1().ServiceAccounts(ns).List(metav1.ListOptions{})
 	}
-	err = listquery(outdir+"/serviceaccounts", "serviceaccounts.json", dc.Serviceaccounts, err, f)
+	err = listquery(outdir+"/serviceaccounts", "serviceaccounts.json", dc.ServiceAccounts, err, f)
 
 	// grab services
 	f = func() (runtime.Object, error) {
-		return kubeClient.CoreV1().Secrets(ns).List(metav1.ListOptions{})
+		return kubeClient.CoreV1().Services(ns).List(metav1.ListOptions{})
 	}
 	err = listquery(outdir+"/services", "services.json", dc.Services, err, f)
 
@@ -206,7 +206,7 @@ func QueryNSResources(kubeClient kubernetes.Interface, outpath string, ns string
 	f = func() (runtime.Object, error) {
 		return kubeClient.Apps().StatefulSets(ns).List(metav1.ListOptions{})
 	}
-	err = listquery(outdir+"/statefulsets", "statefulsets.json", dc.Deployments, err, f)
+	err = listquery(outdir+"/statefulsets", "statefulsets.json", dc.StatefulSets, err, f)
 
 	return err
 }
@@ -220,19 +220,19 @@ func QueryNonNSResources(kubeClient kubernetes.Interface, outpath string, dc *Co
 	f := func() (runtime.Object, error) {
 		return kubeClient.Rbac().ClusterRoleBindings().List(metav1.ListOptions{})
 	}
-	err = listquery(outpath+"/clusterrolebindings", "clusterrolebindings.json", dc.Clusterrolebindings, err, f)
+	err = listquery(outpath+"/clusterrolebindings", "clusterrolebindings.json", dc.ClusterRoleBindings, err, f)
 
 	// grab clusterroles
 	f = func() (runtime.Object, error) {
 		return kubeClient.Rbac().ClusterRoles().List(metav1.ListOptions{})
 	}
-	err = listquery(outpath+"/clusterroles", "clusterroles.json", dc.Clusterrolebindings, err, f)
+	err = listquery(outpath+"/clusterroles", "clusterroles.json", dc.ClusterRoles, err, f)
 
 	// grab componentstatus
 	f = func() (runtime.Object, error) {
 		return kubeClient.CoreV1().ComponentStatuses().List(metav1.ListOptions{})
 	}
-	err = listquery(outpath+"/componentstatuses", "componentstatuses.json", dc.Componentstatuses, err, f)
+	err = listquery(outpath+"/componentstatuses", "componentstatuses.json", dc.ComponentStatuses, err, f)
 
 	// grab nodes
 	if err == nil {
@@ -247,25 +247,25 @@ func QueryNonNSResources(kubeClient kubernetes.Interface, outpath string, dc *Co
 	f = func() (runtime.Object, error) {
 		return kubeClient.CoreV1().PersistentVolumes().List(metav1.ListOptions{})
 	}
-	err = listquery(outpath+"/persistentvolumes", "persistentvolumes.json", dc.Persistentvolumes, err, f)
+	err = listquery(outpath+"/persistentvolumes", "persistentvolumes.json", dc.PersistentVolumes, err, f)
 
 	// grab podsecuritypolicies
 	f = func() (runtime.Object, error) {
 		return kubeClient.Extensions().PodSecurityPolicies().List(metav1.ListOptions{})
 	}
-	err = listquery(outpath+"/podsecuritypolicies", "podsecuritypolicies.json", dc.Podsecuritypolicies, err, f)
+	err = listquery(outpath+"/podsecuritypolicies", "podsecuritypolicies.json", dc.PodSecurityPolicies, err, f)
 
 	// grab storageclasses
 	f = func() (runtime.Object, error) {
 		return kubeClient.Storage().StorageClasses().List(metav1.ListOptions{})
 	}
-	err = listquery(outpath+"/storageclasses", "storageclasses.json", dc.Storageclasses, err, f)
+	err = listquery(outpath+"/storageclasses", "storageclasses.json", dc.StorageClasses, err, f)
 
 	// grab thirdpartyresources
 	f = func() (runtime.Object, error) {
 		return kubeClient.Extensions().ThirdPartyResources().List(metav1.ListOptions{})
 	}
-	err = listquery(outpath+"/thirdpartyresources", "thirdpartyresources.json", dc.Thirdpartyresources, err, f)
+	err = listquery(outpath+"/thirdpartyresources", "thirdpartyresources.json", dc.ThirdPartyResources, err, f)
 
 	return err
 }
