@@ -20,7 +20,6 @@ import (
 	"encoding/json"
 	"io/ioutil"
 	"os"
-	"strings"
 
 	"github.com/golang/glog"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -29,8 +28,9 @@ import (
 )
 
 type nodeData struct {
-	APIResource   v1.Node                `json:"apiResource"`
-	ConfigzOutput map[string]interface{} `json:"configzOutput"`
+	APIResource   v1.Node                `json:"apiResource,omitempty"`
+	ConfigzOutput map[string]interface{} `json:"configzOutput,omitempty"`
+	HealthzStatus int                    `json:"healthzStatus,omitempty"`
 }
 
 type ListerA func() ([]interface{}, error)
@@ -66,25 +66,34 @@ func gatherNodeData(kubeClient kubernetes.Interface, outpath string, dc *Config)
 		results := make([]interface{}, len(nodelist.Items))
 		for i, node := range nodelist.Items {
 			var configz map[string]interface{}
+			var healthstatus int
 
 			// We hit the master on /api/v1/proxy/nodes/<node> to gather node
 			// information without having to reinvent auth
-			configzpath := strings.Join([]string{
-				"/api/v1/proxy/nodes",
-				node.Name,
-				"configz",
-			}, "/")
-			request := kubeClient.CoreV1().RESTClient().Get().RequestURI(configzpath)
+			proxypath := "/api/v1/proxy/nodes/" + node.Name
+			restclient := kubeClient.CoreV1().RESTClient()
 
+			// Get the configz endpoint, put the result in the nodeData
+			request := restclient.Get().RequestURI(proxypath + "/configz")
 			if result, err := request.Do().Raw(); err == nil {
 				json.Unmarshal(result, &configz)
 			} else {
 				glog.Warningf("Could not get configz endpoint for node %v: %v", node.Name, err)
 			}
 
+			// Get the healthz endpoint too. We care about the response code in this
+			// case, not the body.
+			request = restclient.Get().RequestURI(proxypath + "/healthz")
+			if result := request.Do(); result.Error() == nil {
+				result.StatusCode(&healthstatus)
+			} else {
+				glog.Warningf("Could not get healthz endpoint for node %v: %v", node.Name, err)
+			}
+
 			results[i] = nodeData{
 				APIResource:   node,
 				ConfigzOutput: configz,
+				HealthzStatus: healthstatus,
 			}
 		}
 
