@@ -100,5 +100,5 @@ func gatherNodeData(kubeClient kubernetes.Interface, outpath string, dc *Config)
 		return results, nil
 	}
 
-	return createresults(outpath+"/nodes", "nodes.json", dc.Nodes, f)
+	return createresults(outpath+"/node-data", "nodes.json", dc.Nodes, f)
 }

@@ -18,6 +18,9 @@ package discovery
 
 import (
 	"flag"
+	"reflect"
+	"strings"
+
 	"github.com/satori/go.uuid"
 	"github.com/spf13/viper"
 
@@ -51,45 +54,44 @@ type Config struct {
 	// certificatesigningrequests bool
 	// clusters				bool
 	// networkpolicies          bool `json:"networkpolicies"`
-	ClusterRoleBindings      bool `json:"clusterrolebindings"`
-	ClusterRoles             bool `json:"clusterroles"`
-	ComponentStatuses        bool `json:"componentstatuses"`
-	ConfigMaps               bool `json:"configmaps"`
-	DaemonSets               bool `json:"daemonsets"`
-	Deployments              bool `json:"deployments"`
-	Endpoints                bool `json:"endpoints"`
-	Events                   bool `json:"events"`
-	HorizontalPodAutoscalers bool `json:"horizontalpodautoscalers"`
-	Ingresses                bool `json:"ingresses"`
-	Jobs                     bool `json:"jobs"`
-	LimitRanges              bool `json:"limitranges"`
-	PersistentVolumeClaims   bool `json:"persistentvolumeclaims"`
-	Pods                     bool `json:"pods"`
-	PodDisruptionBudgets     bool `json:"poddisruptionbudgets"`
-	PodSecurityPolicies      bool `json:"podsecuritypolicies"`
-	PodTemplates             bool `json:"podtemplates"`
-	ReplicaSets              bool `json:"replicasets"`
-	ReplicationControllers   bool `json:"replicationcontrollers"`
-	ResourceQuotas           bool `json:"resourcequotas"`
-	RoleBindings             bool `json:"rolebindings"`
-	Roles                    bool `json:"roles"`
-	Secrets                  bool `json:"secrets"`
-	ServiceAccounts          bool `json:"serviceaccounts"`
-	Services                 bool `json:"services"`
-	StatefulSets             bool `json:"statefulsets"`
-	StorageClasses           bool `json:"storageclasses"`
-	ThirdPartyResources      bool `json:"thirdpartyresources"`
+	ConfigMaps               bool `json:"configmaps" resource:"ns"`
+	DaemonSets               bool `json:"daemonsets" resource:"ns"`
+	Deployments              bool `json:"deployments" resource:"ns"`
+	Endpoints                bool `json:"endpoints" resource:"ns"`
+	Events                   bool `json:"events" resource:"ns"`
+	HorizontalPodAutoscalers bool `json:"horizontalpodautoscalers" resource:"ns"`
+	Ingresses                bool `json:"ingresses" resource:"ns"`
+	Jobs                     bool `json:"jobs" resource:"ns"`
+	LimitRanges              bool `json:"limitranges" resource:"ns"`
+	PersistentVolumeClaims   bool `json:"persistentvolumeclaims" resource:"ns"`
+	Pods                     bool `json:"pods" resource:"ns"`
+	PodDisruptionBudgets     bool `json:"poddisruptionbudgets" resource:"ns"`
+	PodTemplates             bool `json:"podtemplates" resource:"ns"`
+	ReplicaSets              bool `json:"replicasets" resource:"ns"`
+	ReplicationControllers   bool `json:"replicationcontrollers" resource:"ns"`
+	ResourceQuotas           bool `json:"resourcequotas" resource:"ns"`
+	RoleBindings             bool `json:"rolebindings" resource:"ns"`
+	Roles                    bool `json:"roles" resource:"ns"`
+	Secrets                  bool `json:"secrets" resource:"ns"`
+	ServiceAccounts          bool `json:"serviceaccounts" resource:"ns"`
+	Services                 bool `json:"services" resource:"ns"`
+	StatefulSets             bool `json:"statefulsets" resource:"ns"`
 
 	// Non-NSScoped.
-	PersistentVolumes bool `json:"persistentvolumes"`
-	Nodes             bool `json:"nodes"`
+	PersistentVolumes   bool `json:"persistentvolumes" resource:"non-ns"`
+	Nodes               bool `json:"nodes" resource:"non-ns"`
+	ComponentStatuses   bool `json:"componentstatuses" resource:"non-ns"`
+	PodSecurityPolicies bool `json:"podsecuritypolicies" resource:"non-ns"`
+	ClusterRoleBindings bool `json:"clusterrolebindings" resource:"non-ns"`
+	ClusterRoles        bool `json:"clusterroles" resource:"non-ns"`
+	ThirdPartyResources bool `json:"thirdpartyresources" resource:"non-ns"`
+	StorageClasses      bool `json:"storageclasses" resource:"non-ns"`
 
 	// TODOs:
-	// 1. Convert to []string of resources vs. for easier processing.
-	// 2. Master component /configz
-	// 3. Add support for label selection? (Whitelist, Blacklist)
-	// 4. Pod RegEx query? (workload issue)
-	// 5. Other api-types.
+	// 1. Master component /configz
+	// 2. Add support for label selection? (Whitelist, Blacklist)
+	// 3. Pod RegEx query? (workload issue)
+	// 4. Other api-types.
 }
 
 // SetConfigDefaults sets up the defaults in case input is sparse.
@@ -130,6 +132,45 @@ func SetConfigDefaults(dc *Config) {
 	dc.StatefulSets = true
 	dc.StorageClasses = true
 	dc.ThirdPartyResources = true
+}
+
+// ResourcesToQuery returns the list of NS and non-NS resource types that are
+// ok to query, depending on whether they have been set to "true" in the
+// configuration. The keys to the map will be the JSON key name from the config
+// struct (eg. "configmaps"), and the values will be the resource type (eg.
+// "ns" or "non-ns"). All entries in the map are ok to query, values set to
+// false will not be included.
+func (dc *Config) ResourcesToQuery() map[string]string {
+	cfgtype := reflect.TypeOf(*dc)
+	ret := make(map[string]string, cfgtype.NumField())
+
+	// Use the reflect package to iterate on fields in the config struct, adding
+	// them to the returned map if they have the "resource" field tag and are set
+	// to `true`. The map will be indexed by the JSON annotation key (ie.
+	// "configmaps").
+	for i := 0; i < cfgtype.NumField(); i++ {
+		resourceTagVal := cfgtype.Field(i).Tag.Get("resource")
+
+		if resourceTagVal != "" {
+			field := cfgtype.Field(i)
+			jsontag := field.Tag.Get("json")
+			// `key` is the JSON key
+			key := strings.Split(jsontag, ",")[0]
+
+			if key == "" {
+				continue
+			}
+
+			cfgval := reflect.ValueOf(*dc).FieldByName(field.Name)
+
+			// Only add it if the user wants to query it
+			if cfgval.Kind() == reflect.Bool && cfgval.Bool() {
+				ret[key] = resourceTagVal
+			}
+		}
+	}
+
+	return ret
 }
 
 // LoadConfig will parse input + config file and return a clientset, and config
