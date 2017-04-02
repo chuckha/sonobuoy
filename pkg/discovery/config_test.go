@@ -17,6 +17,8 @@ limitations under the License.
 package discovery
 
 import (
+	"encoding/json"
+	"io/ioutil"
 	"reflect"
 	"testing"
 )
@@ -35,6 +37,27 @@ func TestDefaults(t *testing.T) {
 	dc2.UUID = "0xDEADBEEF"
 
 	if !reflect.DeepEqual(&dc2, &dc1) {
-		t.Fatalf("Defaults should match but are not")
+		t.Fatalf("Defaults should match but didn't")
 	}
+}
+
+func TestSaveAndLoad(t *testing.T) {
+	var cfg SonoCfg
+	SetConfigDefaults(&cfg.DC)
+
+	if blob, err := json.Marshal(&cfg); err == nil {
+		if err = ioutil.WriteFile("./config.json", blob, 0644); err != nil {
+			t.Fatalf("Failed to write default config.json: %v", err)
+		}
+	} else {
+		t.Fatalf("Failed to serialize ", err)
+	}
+
+	// TODO: Randomly change values
+
+	_, dc2 := LoadConfig()
+	if !reflect.DeepEqual(dc2, &cfg.DC) {
+		t.Fatalf("Defaults should match but didn't \n\n%v\n\n%v", dc2, &cfg.DC)
+	}
+
 }

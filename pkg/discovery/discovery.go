@@ -41,7 +41,7 @@ func Run(stopCh <-chan struct{}) []error {
 
 	// 3. Create the directory which wil store the results
 	outpath := dc.ResultsDir + "/" + dc.UUID
-	err := os.MkdirAll(outpath, 0755)
+	err := os.MkdirAll(outpath+"/namespaces", 0755)
 	if err != nil {
 		panic(err.Error())
 	}
@@ -76,7 +76,7 @@ func Run(stopCh <-chan struct{}) []error {
 	// We can be throttled by the client to just let loose queries and channel back errors.
 	go spawn(QueryNonNSResources(kubeClient, outpath, dc))
 	for _, ns := range nslist {
-		go spawn(QueryNSResources(kubeClient, outpath, ns, dc))
+		go spawn(QueryNSResources(kubeClient, outpath+"/namespaces", ns, dc))
 	}
 	go spawn(rune2e(outpath, dc))
 	go waitcomplete()
@@ -84,17 +84,17 @@ func Run(stopCh <-chan struct{}) []error {
 	//6. Block until completion or kill signal
 	select {
 	case <-stopCh:
+		// signal raised just exit
 	case <-done:
-	}
-
-	//7. tarball up results
-	tb := dc.ResultsDir + "/sonobuoy_" + dc.UUID + ".tar.gz"
-	err = tarx.Compress(tb, outpath, &tarx.CompressOptions{Compression: tarx.Gzip})
-	if err == nil {
-		err = os.RemoveAll(outpath)
-	}
-	if err != nil {
-		errlst = append(errlst, err)
+		//7. tarball up results
+		tb := dc.ResultsDir + "/sonobuoy_" + dc.UUID + ".tar.gz"
+		err = tarx.Compress(tb, outpath, &tarx.CompressOptions{Compression: tarx.Gzip})
+		if err == nil {
+			err = os.RemoveAll(outpath)
+		}
+		if err != nil {
+			errlst = append(errlst, err)
+		}
 	}
 
 	return errlst

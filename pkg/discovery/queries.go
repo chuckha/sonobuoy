@@ -41,7 +41,6 @@ import (
 type Lister func() (runtime.Object, error)
 
 func listquery(outpath string, file string, f Lister) error {
-	// Short-circuit early if we're not configured to gather these results
 	listObj, err := f()
 	if err != nil {
 		return err
@@ -49,7 +48,6 @@ func listquery(outpath string, file string, f Lister) error {
 	if listObj == nil {
 		return fmt.Errorf("got invalid response from API server")
 	}
-
 	if listPtr, err := meta.GetItemsPtr(listObj); err == nil {
 		if items, err := conversion.EnforcePtr(listPtr); err == nil {
 			if items.Len() > 0 {
