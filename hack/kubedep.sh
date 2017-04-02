@@ -18,4 +18,5 @@ rm -rf Godeps vendor
 export GOPATH=$GOPATH:$KPATH/staging
 godep save ./...
 cp -Lr $KPATH/vendor/k8s.io/api* $KPATH/vendor/k8s.io/client-go ./vendor/k8s.io/
+cp $KPATH/test/e2e/generated/bindata.go ./vendor/k8s.io/kubernetes/test/e2e/generated/bindata.go
 # TODO Add generated bin-data file from upstream, this needs to be fixed
