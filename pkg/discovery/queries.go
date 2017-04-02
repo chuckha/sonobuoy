@@ -18,6 +18,7 @@ package discovery
 
 import (
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"os"
 
@@ -39,26 +40,104 @@ import (
 // dumped as json (so, any object really)
 type Lister func() (runtime.Object, error)
 
-func listquery(outpath string, file string, test bool, err error, f Lister) error {
+func listquery(outpath string, file string, f Lister) error {
 	// Short-circuit early if we're not configured to gather these results
-	if test && err == nil {
-		listObj, err := f()
-		if err == nil && listObj != nil {
-			if listPtr, err := meta.GetItemsPtr(listObj); err == nil {
-				if items, err := conversion.EnforcePtr(listPtr); err == nil {
-					if items.Len() > 0 {
-						if err = os.Mkdir(outpath, 0755); err == nil {
-							if eJSONBytes, err := json.Marshal(listPtr); err == nil {
-								glog.V(5).Infof("%v", string(eJSONBytes))
-								err = ioutil.WriteFile(outpath+"/"+file, eJSONBytes, 0644)
-							}
-						}
+	listObj, err := f()
+	if err != nil {
+		return err
+	}
+	if listObj == nil {
+		return fmt.Errorf("got invalid response from API server")
+	}
+
+	if listPtr, err := meta.GetItemsPtr(listObj); err == nil {
+		if items, err := conversion.EnforcePtr(listPtr); err == nil {
+			if items.Len() > 0 {
+				if err = os.Mkdir(outpath, 0755); err == nil {
+					if eJSONBytes, err := json.Marshal(listPtr); err == nil {
+						glog.V(5).Infof("%v", string(eJSONBytes))
+						err = ioutil.WriteFile(outpath+"/"+file, eJSONBytes, 0644)
 					}
 				}
 			}
 		}
 	}
 	return err
+}
+
+func queryNsResource(ns string, resourceKind string, kubeClient kubernetes.Interface) (runtime.Object, error) {
+	switch resourceKind {
+	case "configmaps":
+		return kubeClient.CoreV1().ConfigMaps(ns).List(metav1.ListOptions{})
+	case "daemonsets":
+		return kubeClient.Extensions().DaemonSets(ns).List(metav1.ListOptions{})
+	case "deployments":
+		return kubeClient.Apps().Deployments(ns).List(metav1.ListOptions{})
+	case "endpoints":
+		return kubeClient.CoreV1().Endpoints(ns).List(metav1.ListOptions{})
+	case "events":
+		return kubeClient.CoreV1().Events(ns).List(metav1.ListOptions{})
+	case "horizontalpodautoscalers":
+		return kubeClient.Autoscaling().HorizontalPodAutoscalers(ns).List(metav1.ListOptions{})
+	case "ingresses":
+		return kubeClient.Extensions().Ingresses(ns).List(metav1.ListOptions{})
+	case "jobs":
+		return kubeClient.Batch().Jobs(ns).List(metav1.ListOptions{})
+	case "limitranges":
+		return kubeClient.CoreV1().LimitRanges(ns).List(metav1.ListOptions{})
+	case "persistentvolumeclaims":
+		return kubeClient.CoreV1().PersistentVolumeClaims(ns).List(metav1.ListOptions{})
+	case "pods":
+		return kubeClient.CoreV1().Pods(ns).List(metav1.ListOptions{})
+	case "poddisruptionbudgets":
+		return kubeClient.Policy().PodDisruptionBudgets(ns).List(metav1.ListOptions{})
+	case "podtemplates":
+		return kubeClient.CoreV1().PodTemplates(ns).List(metav1.ListOptions{})
+	case "replicasets":
+		return kubeClient.Extensions().ReplicaSets(ns).List(metav1.ListOptions{})
+	case "replicationcontrollers":
+		return kubeClient.CoreV1().ReplicationControllers(ns).List(metav1.ListOptions{})
+	case "resourcequotas":
+		return kubeClient.CoreV1().ResourceQuotas(ns).List(metav1.ListOptions{})
+	case "rolebindings":
+		return kubeClient.Rbac().RoleBindings(ns).List(metav1.ListOptions{})
+	case "roles":
+		return kubeClient.Rbac().Roles(ns).List(metav1.ListOptions{})
+	case "secrets":
+		return kubeClient.CoreV1().Secrets(ns).List(metav1.ListOptions{})
+	case "serviceaccounts":
+		return kubeClient.CoreV1().ServiceAccounts(ns).List(metav1.ListOptions{})
+	case "services":
+		return kubeClient.CoreV1().Services(ns).List(metav1.ListOptions{})
+	case "statefulsets":
+		return kubeClient.Apps().StatefulSets(ns).List(metav1.ListOptions{})
+	default:
+		return nil, fmt.Errorf("don't know how to handle namespaced resource %v", resourceKind)
+	}
+
+}
+
+func queryNonNsResource(resourceKind string, kubeClient kubernetes.Interface) (runtime.Object, error) {
+	switch resourceKind {
+	case "clusterrolebindings":
+		return kubeClient.Rbac().ClusterRoleBindings().List(metav1.ListOptions{})
+	case "clusterroles":
+		return kubeClient.Rbac().ClusterRoles().List(metav1.ListOptions{})
+	case "componentstatuses":
+		return kubeClient.CoreV1().ComponentStatuses().List(metav1.ListOptions{})
+	case "nodes":
+		return kubeClient.CoreV1().Nodes().List(metav1.ListOptions{})
+	case "persistentvolumes":
+		return kubeClient.CoreV1().PersistentVolumes().List(metav1.ListOptions{})
+	case "podsecuritypolicies":
+		return kubeClient.Extensions().PodSecurityPolicies().List(metav1.ListOptions{})
+	case "storageclasses":
+		return kubeClient.Storage().StorageClasses().List(metav1.ListOptions{})
+	case "thirdpartyresources":
+		return kubeClient.Extensions().ThirdPartyResources().List(metav1.ListOptions{})
+	default:
+		return nil, fmt.Errorf("don't know how to handle non-namespaced resource %v", resourceKind)
+	}
 }
 
 // QueryNSResources will query namespace specific
@@ -68,145 +147,21 @@ func QueryNSResources(kubeClient kubernetes.Interface, outpath string, ns string
 
 	outdir := outpath + "/" + ns
 	err = os.Mkdir(outdir, 0755)
-
-	// grab configmaps
-	f := func() (runtime.Object, error) {
-		return kubeClient.CoreV1().ConfigMaps(ns).List(metav1.ListOptions{})
+	if err != nil {
+		return fmt.Errorf("could not create output directory %s: %v", outdir, err)
 	}
-	err = listquery(outdir+"/configmaps", "configmaps.json", dc.ConfigMaps, err, f)
 
-	// grab daemonsets
-	f = func() (runtime.Object, error) {
-		return kubeClient.Extensions().DaemonSets(ns).List(metav1.ListOptions{})
+	for resourceKind, resourceScope := range dc.ResourcesToQuery() {
+		// We use annotations to tag resources as being namespaced vs not, skip any
+		// that aren't "ns"
+		if resourceScope == "ns" {
+			lister := func() (runtime.Object, error) { return queryNsResource(ns, resourceKind, kubeClient) }
+			err = listquery(outdir+"/"+resourceKind, resourceKind+".json", lister)
+			if err != nil {
+				return fmt.Errorf("Error querying %v: %v", resourceKind, err)
+			}
+		}
 	}
-	err = listquery(outdir+"/daemonsets", "daemonsets.json", dc.DaemonSets, err, f)
-
-	// grab deployments
-	f = func() (runtime.Object, error) {
-		return kubeClient.Apps().Deployments(ns).List(metav1.ListOptions{})
-	}
-	err = listquery(outdir+"/deployments", "deployments.json", dc.Deployments, err, f)
-
-	// grab endpoints
-	f = func() (runtime.Object, error) {
-		return kubeClient.CoreV1().Endpoints(ns).List(metav1.ListOptions{})
-	}
-	err = listquery(outdir+"/endpoints", "endpoints.json", dc.Endpoints, err, f)
-
-	// grab events
-	f = func() (runtime.Object, error) {
-		return kubeClient.CoreV1().Events(ns).List(metav1.ListOptions{})
-	}
-	err = listquery(outdir+"/events", "events.json", dc.Events, err, f)
-
-	// grab horizontalpodautoscalers
-	f = func() (runtime.Object, error) {
-		return kubeClient.Autoscaling().HorizontalPodAutoscalers(ns).List(metav1.ListOptions{})
-	}
-	err = listquery(outdir+"/horizontalpodautoscalers", "horizontalpodautoscalers.json", dc.HorizontalPodAutoscalers, err, f)
-
-	// grab ingresses
-	f = func() (runtime.Object, error) {
-		return kubeClient.Extensions().Ingresses(ns).List(metav1.ListOptions{})
-	}
-	err = listquery(outdir+"/ingresses", "ingresses.json", dc.Ingresses, err, f)
-
-	//grab jobs
-	f = func() (runtime.Object, error) {
-		return kubeClient.Batch().Jobs(ns).List(metav1.ListOptions{})
-	}
-	err = listquery(outdir+"/jobs", "jobs.json", dc.Jobs, err, f)
-
-	// grab limitranges
-	f = func() (runtime.Object, error) {
-		return kubeClient.CoreV1().LimitRanges(ns).List(metav1.ListOptions{})
-	}
-	err = listquery(outdir+"/limitranges", "limitranges.json", dc.LimitRanges, err, f)
-
-	/* grab networkpolicies
-	f = func() (runtime.Object, error) {
-		return kubeClient.Foo().Bar(ns).List(metav1.ListOptions{})
-	}
-	err = listquery(outdir+"/networkpolicies", "networkpolicies.json", dc.networkpolicies, err, f)
-	*/
-
-	// grab persistentvolumeclaims
-	f = func() (runtime.Object, error) {
-		return kubeClient.CoreV1().PersistentVolumeClaims(ns).List(metav1.ListOptions{})
-	}
-	err = listquery(outdir+"/persistentvolumeclaims", "persistentvolumeclaims.json", dc.PersistentVolumeClaims, err, f)
-
-	// grab pods
-	f = func() (runtime.Object, error) {
-		return kubeClient.CoreV1().Pods(ns).List(metav1.ListOptions{})
-	}
-	err = listquery(outdir+"/pods", "pods.json", dc.Pods, err, f)
-
-	// grab poddisruptionbudgets
-	f = func() (runtime.Object, error) {
-		return kubeClient.Policy().PodDisruptionBudgets(ns).List(metav1.ListOptions{})
-	}
-	err = listquery(outdir+"/poddisruptionbudgets", "poddisruptionbudgets.json", dc.PodDisruptionBudgets, err, f)
-
-	// grab podtemplates
-	f = func() (runtime.Object, error) {
-		return kubeClient.CoreV1().PodTemplates(ns).List(metav1.ListOptions{})
-	}
-	err = listquery(outdir+"/podtemplates", "podtemplates.json", dc.PodTemplates, err, f)
-
-	// grab replicasets
-	f = func() (runtime.Object, error) {
-		return kubeClient.Extensions().ReplicaSets(ns).List(metav1.ListOptions{})
-	}
-	err = listquery(outdir+"/replicasets", "replicasets.json", dc.ReplicaSets, err, f)
-
-	// grab replicationcontrollers
-	f = func() (runtime.Object, error) {
-		return kubeClient.CoreV1().ReplicationControllers(ns).List(metav1.ListOptions{})
-	}
-	err = listquery(outdir+"/replicationcontrollers", "replicationcontrollers.json", dc.ReplicationControllers, err, f)
-
-	// grab resourcequotas
-	f = func() (runtime.Object, error) {
-		return kubeClient.CoreV1().ResourceQuotas(ns).List(metav1.ListOptions{})
-	}
-	err = listquery(outdir+"/resourcequotas", "resourcequotas.json", dc.ResourceQuotas, err, f)
-
-	// grab rolebindings
-	f = func() (runtime.Object, error) {
-		return kubeClient.Rbac().RoleBindings(ns).List(metav1.ListOptions{})
-	}
-	err = listquery(outdir+"/rolebindings", "rolebindings.json", dc.RoleBindings, err, f)
-
-	// grab roles
-	f = func() (runtime.Object, error) {
-		return kubeClient.Rbac().Roles(ns).List(metav1.ListOptions{})
-	}
-	err = listquery(outdir+"/roles", "roles.json", dc.Roles, err, f)
-
-	// grab secrets
-	f = func() (runtime.Object, error) {
-		return kubeClient.CoreV1().Secrets(ns).List(metav1.ListOptions{})
-	}
-	err = listquery(outdir+"/secrets", "secrets.json", dc.Secrets, err, f)
-
-	// grab serviceaccounts
-	f = func() (runtime.Object, error) {
-		return kubeClient.CoreV1().ServiceAccounts(ns).List(metav1.ListOptions{})
-	}
-	err = listquery(outdir+"/serviceaccounts", "serviceaccounts.json", dc.ServiceAccounts, err, f)
-
-	// grab services
-	f = func() (runtime.Object, error) {
-		return kubeClient.CoreV1().Services(ns).List(metav1.ListOptions{})
-	}
-	err = listquery(outdir+"/services", "services.json", dc.Services, err, f)
-
-	// grab statefulsets
-	f = func() (runtime.Object, error) {
-		return kubeClient.Apps().StatefulSets(ns).List(metav1.ListOptions{})
-	}
-	err = listquery(outdir+"/statefulsets", "statefulsets.json", dc.StatefulSets, err, f)
 
 	return err
 }
@@ -216,56 +171,22 @@ func QueryNonNSResources(kubeClient kubernetes.Interface, outpath string, dc *Co
 	var err error
 	glog.Infof("Running non-ns query")
 
-	// grab clusterrolebindings
-	f := func() (runtime.Object, error) {
-		return kubeClient.Rbac().ClusterRoleBindings().List(metav1.ListOptions{})
+	for resourceKind, resourceScope := range dc.ResourcesToQuery() {
+		// We use annotations to tag resources as being namespaced vs not, skip any
+		// that aren't "non-ns"
+		if resourceScope == "non-ns" {
+			lister := func() (runtime.Object, error) { return queryNonNsResource(resourceKind, kubeClient) }
+			err = listquery(outpath+"/"+resourceKind, resourceKind+".json", lister)
+			if err != nil {
+				return fmt.Errorf("Error querying %v: %v", resourceKind, err)
+			}
+		}
 	}
-	err = listquery(outpath+"/clusterrolebindings", "clusterrolebindings.json", dc.ClusterRoleBindings, err, f)
 
-	// grab clusterroles
-	f = func() (runtime.Object, error) {
-		return kubeClient.Rbac().ClusterRoles().List(metav1.ListOptions{})
+	if dc.Nodes {
+		if err = gatherNodeData(kubeClient, outpath, dc); err != nil {
+			return err
+		}
 	}
-	err = listquery(outpath+"/clusterroles", "clusterroles.json", dc.ClusterRoles, err, f)
-
-	// grab componentstatus
-	f = func() (runtime.Object, error) {
-		return kubeClient.CoreV1().ComponentStatuses().List(metav1.ListOptions{})
-	}
-	err = listquery(outpath+"/componentstatuses", "componentstatuses.json", dc.ComponentStatuses, err, f)
-
-	// grab nodes
-	if err == nil {
-		err = gatherNodeData(kubeClient, outpath, dc)
-	}
-	/*f = func() (runtime.Object, error) {
-		return kubeClient.CoreV1().Nodes().List(metav1.ListOptions{})
-	}
-	err = listquery(outpath+"/nodes", "nodes.json", dc.Nodes, err, f)*/
-
-	// grab persistentvolumes
-	f = func() (runtime.Object, error) {
-		return kubeClient.CoreV1().PersistentVolumes().List(metav1.ListOptions{})
-	}
-	err = listquery(outpath+"/persistentvolumes", "persistentvolumes.json", dc.PersistentVolumes, err, f)
-
-	// grab podsecuritypolicies
-	f = func() (runtime.Object, error) {
-		return kubeClient.Extensions().PodSecurityPolicies().List(metav1.ListOptions{})
-	}
-	err = listquery(outpath+"/podsecuritypolicies", "podsecuritypolicies.json", dc.PodSecurityPolicies, err, f)
-
-	// grab storageclasses
-	f = func() (runtime.Object, error) {
-		return kubeClient.Storage().StorageClasses().List(metav1.ListOptions{})
-	}
-	err = listquery(outpath+"/storageclasses", "storageclasses.json", dc.StorageClasses, err, f)
-
-	// grab thirdpartyresources
-	f = func() (runtime.Object, error) {
-		return kubeClient.Extensions().ThirdPartyResources().List(metav1.ListOptions{})
-	}
-	err = listquery(outpath+"/thirdpartyresources", "thirdpartyresources.json", dc.ThirdPartyResources, err, f)
-
-	return err
+	return nil
 }
