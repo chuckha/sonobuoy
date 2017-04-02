@@ -94,6 +94,11 @@ type Config struct {
 	// 4. Other api-types.
 }
 
+// SonoCfg is used to export a config
+type SonoCfg struct {
+	DC Config `json:"sonobuoy,omitempty"`
+}
+
 // SetConfigDefaults sets up the defaults in case input is sparse.
 func SetConfigDefaults(dc *Config) {
 	dc.UUID = uuid.NewV4().String()
