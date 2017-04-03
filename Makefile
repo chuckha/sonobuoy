@@ -26,23 +26,28 @@ BUILD_IMAGE ?= golang:1.7
 # BUILD_IMAGE ?= golang:1.7-alpine3.5
 DOCKER ?= docker
 DIR := ${CURDIR}
+BUILD = go build -v && go test -i -c -o $(TESTTARGET) $(TESTSRCS)
+TEST = go test $(GOTARGET)/pkg/discovery
 
 local: 
-	go build -v && go test -i -c -o $(TESTTARGET) $(TESTSRCS)
+	$(BUILD)
+
+test: 
+	$(TEST)
 
 all: cbuild container
 
 cbuild: 
-	$(DOCKER) run --rm -v $(DIR):$(BUILDMNT) -w $(BUILDMNT) $(BUILD_IMAGE) go build -v && go test -i -c -o $(TESTTARGET) $(TESTSRCS)
+	$(DOCKER) run --rm -v $(DIR):$(BUILDMNT) -w $(BUILDMNT) $(BUILD_IMAGE) $(BUILD) && $(TEST)
 
-container:
+container: cbuild
 	$(DOCKER) build -t $(REGISTRY)/$(TARGET):latest -t $(REGISTRY)/$(TARGET):$(VERSION) .
 
 # TODO: Determine tagging mechanics
 push: 
 	docker -- push $(REGISTRY)/$(TARGET)
 
-.PHONY: all local container cbuild push
+.PHONY: all local container cbuild push test
 
 clean: 
 	rm -f $(TARGET) $(TESTTARGET)
