@@ -32,7 +32,6 @@ func Run(stopCh <-chan struct{}) []error {
 	var errlst []error
 	done := make(chan struct{})
 
-	// TODO - This will be in main and passed in.
 	// 0. Load the config
 	kubeClient, dc := LoadConfig()
 

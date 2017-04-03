@@ -13,6 +13,8 @@ Needless to say, there are a plethora of solutions that exist today, but there i
 ## Goals
 This gap in health reporting, is the primary role that sonobuoy aims to fill.  In essence, Sonobuoy is an operator tool for inspecting a cluster's configuration and recording its behavioral characteristics.
 
+[![Cluster Verification](http://img.youtube.com/vi/jr0JaXfKj68/0.jpg)](http://www.youtube.com/watch?v=jr0JaXfKj68)
+
 ## Non-goals:
 Sonobuoy’s primary function is data collection only, and therefore, any analysis of the results is specifically a non-goal of sonobuoy.   
 
