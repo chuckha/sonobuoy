@@ -19,6 +19,7 @@ package discovery
 import (
 	"encoding/json"
 	"io/ioutil"
+	"os"
 	"reflect"
 	"testing"
 )
@@ -45,6 +46,9 @@ func TestSaveAndLoad(t *testing.T) {
 	var cfg SonoCfg
 	SetConfigDefaults(&cfg.DC)
 
+	cfg.DC.ConfigMaps = false
+	cfg.DC.Namespaces = "funky*"
+
 	if blob, err := json.Marshal(&cfg); err == nil {
 		if err = ioutil.WriteFile("./config.json", blob, 0644); err != nil {
 			t.Fatalf("Failed to write default config.json: %v", err)
@@ -53,11 +57,11 @@ func TestSaveAndLoad(t *testing.T) {
 		t.Fatalf("Failed to serialize ", err)
 	}
 
-	// TODO: Randomly change values
-
 	_, dc2 := LoadConfig()
 	if !reflect.DeepEqual(dc2, &cfg.DC) {
 		t.Fatalf("Defaults should match but didn't \n\n%v\n\n%v", dc2, &cfg.DC)
 	}
+
+	os.Remove("./config.json")
 
 }
