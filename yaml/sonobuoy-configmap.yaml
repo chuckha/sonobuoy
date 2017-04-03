@@ -16,7 +16,43 @@ apiVersion: v1
 data:
   config.json: |- 
     {
-      "default": "params"
+        "sonobuoy": {
+          "clusterrolebindings": true,
+          "clusterroles": true,
+          "componentstatuses": true,
+          "configmaps": true,
+          "daemonsets": true,
+          "deployments": true,
+          "endpoints": true,
+          "events": true,
+          "horizontalpodautoscalers": true,
+          "ingresses": true,
+          "jobs": true,
+          "limitranges": true,
+          "namespaces": ".*",
+          "nodes": true,
+          "persistentvolumeclaims": true,
+          "persistentvolumes": true,
+          "poddisruptionbudgets": true,
+          "pods": true,
+          "podsecuritypolicies": true,
+          "podtemplates": true,
+          "replicasets": true,
+          "replicationcontrollers": true,
+          "resourcequotas": true,
+          "resultsdir": "./results",
+          "rolebindings": true,
+          "roles": true,
+          "runtests": false,
+          "secrets": false,
+          "serviceaccounts": true,
+          "services": true,
+          "statefulsets": true,
+          "storageclasses": true,
+          "testfocusregex": "Conformance",
+          "testskipregex": "Alpha|Disruptive|Feature|Flaky|Serial",
+          "thirdpartyresources": true
+      }
     }
 # TODO: Comment block with the list of options.
 kind: ConfigMap

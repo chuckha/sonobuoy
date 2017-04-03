@@ -8,15 +8,13 @@
 * https://github.com/kubernetes/kubeadm
 * ...
 
-Needless to say, there are a plethora of solutions that exist today, but there is currently no uniform mechanism by which we can determine if a cluster is “healthy”.  
+Needless to say, there are a plethora of solutions that exist today, but there is currently no uniform mechanism by which we can generate a report to determine if a cluster, or its workloads, are “healthy” 
 
 ## Goals
-This gap in cluster health and analysis, is the primary role that sonobuoy aims to fill.  In essence, Sonobouy is an operator tool for inspecting a cluster’s configuration and analyzing its behavioral characteristics, e.g.:   
-
-TODO: List more details and link to configuration settings as we are further down the road.
+This gap in health reporting, is the primary role that sonobuoy aims to fill.  In essence, Sonobuoy is an operator tool for inspecting a cluster's configuration and recording its behavioral characteristics.
 
 ## Non-goals:
-Make julian fries!  
+Sonobuoy’s primary function is data collection only, and therefore, any analysis of the results is specifically a non-goal of sonobuoy.   
 
 # Building 
 You can build and test either as a standalone go application or as a Docker container.
