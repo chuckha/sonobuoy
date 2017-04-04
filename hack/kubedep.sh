@@ -14,9 +14,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# NOTES: 
+# 1. This assumes you're running from the sonobuoy directory
+# 2. This is indeed a hack and is due to how upstream has 
+# structured its libraries. see - https://github.com/kubernetes/kubernetes/issues/43246 
+# for complete details. 
+# 3. Before executing this script, navigate to your $GOPATH/src/k8s.io/kubernetes 
+#    and run ./hack/godep-restore.sh
+
 rm -rf Godeps vendor
+export KPATH=$GOPATH/src/k8s.io/kubernetes
 export GOPATH=$GOPATH:$KPATH/staging
+
+$KPATH/hack/generate-bindata.sh
 godep save ./...
 cp -Lr $KPATH/vendor/k8s.io/api* $KPATH/vendor/k8s.io/client-go ./vendor/k8s.io/
 cp $KPATH/test/e2e/generated/bindata.go ./vendor/k8s.io/kubernetes/test/e2e/generated/bindata.go
-# TODO Add generated bin-data file from upstream, this needs to be fixed
+
