@@ -10,10 +10,19 @@
 
 Needless to say, there are a plethora of solutions that exist today, but there is currently no uniform mechanism by which we can generate a report to determine if a cluster, or its workloads, are “healthy” 
 
+[![Cluster Verification](http://img.youtube.com/vi/jr0JaXfKj68/0.jpg)](http://www.youtube.com/watch?v=jr0JaXfKj68)
+
 ## Goals
 This gap in health reporting, is the primary role that sonobuoy aims to fill.  In essence, Sonobuoy is an operator tool for inspecting a cluster's configuration and recording its behavioral characteristics.
 
-[![Cluster Verification](http://img.youtube.com/vi/jr0JaXfKj68/0.jpg)](http://www.youtube.com/watch?v=jr0JaXfKj68)
+### Use Cases
+* Selective dump of kubernetes resource objects for cluster snap-shotting 
+  * Workload reporting
+  * Workload debugging
+  * Configuration validation
+* Health analysis of a newly installed cluster
+* ... 
+
 
 ## Non-goals:
 Sonobuoy’s primary function is data collection only, and therefore, any analysis of the results is specifically a non-goal of sonobuoy.   
