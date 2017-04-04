@@ -12,14 +12,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-#FROM alpine:3.5
 FROM buildpack-deps:jessie-scm
 MAINTAINER Timothy St. Clair "tstclair@heptio.com"  
 
-#RUN apk update --no-cache && apk add ca-certificates
+# Ensure we're using the latest ansible
+RUN apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 93C4A3FD7BB9C367
+RUN echo "deb http://ppa.launchpad.net/ansible/ansible/ubuntu trusty main" | tee -a /etc/apt/sources.list
+
+RUN apt-get update && apt-get -y --no-install-recommends install \
+    ca-certificates \
+    ansible \
+    python-pip \
+    && rm -rf /var/cache/apt/* \
+    && rm -rf /var/lib/apt/lists/*
 ADD sonobuoy /sonobuoy 
 ADD battery.test /battery.test
 #USER nobody:nobody
 
 CMD ["/bin/sh", "-c", "/sonobuoy -v 3 -logtostderr"]
-

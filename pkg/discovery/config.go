@@ -42,6 +42,9 @@ type Config struct {
 	// Location to store the output results
 	ResultsDir string `json:"resultsdir"`
 
+	// Configuration for ansible
+	SshRemoteUser string `json:"sshremoteuser"`
+
 	// regex filters for e2es
 	Runtests       bool   `json:"runtests"`
 	TestFocusRegex string `json:"testfocusregex"`
@@ -87,6 +90,9 @@ type Config struct {
 	ThirdPartyResources bool `json:"thirdpartyresources" resource:"non-ns"`
 	StorageClasses      bool `json:"storageclasses" resource:"non-ns"`
 
+	// Other behavior
+	HostFacts bool `json:"hostfacts"`
+
 	// TODOs:
 	// 1. Master component /configz
 	// 2. Add support for label selection? (Whitelist, Blacklist)
@@ -103,6 +109,7 @@ type SonoCfg struct {
 func SetConfigDefaults(dc *Config) {
 	dc.UUID = uuid.NewV4().String()
 	dc.ResultsDir = "./results"
+	dc.SshRemoteUser = "root"
 	dc.Runtests = false
 	dc.TestFocusRegex = "Conformance"
 	dc.TestSkipRegex = "Alpha|Disruptive|Feature|Flaky|Serial"
@@ -137,6 +144,7 @@ func SetConfigDefaults(dc *Config) {
 	dc.StatefulSets = true
 	dc.StorageClasses = true
 	dc.ThirdPartyResources = true
+	dc.HostFacts = true
 }
 
 // ResourcesToQuery returns the list of NS and non-NS resource types that are

@@ -87,7 +87,7 @@ func gatherNodeData(kubeClient kubernetes.Interface, outpath string, dc *Config)
 			if result := request.Do(); result.Error() == nil {
 				result.StatusCode(&healthstatus)
 			} else {
-				glog.Warningf("Could not get healthz endpoint for node %v: %v", node.Name, err)
+				glog.Warningf("Could not get healthz endpoint for node %v: %v", node.Name, result.Error())
 			}
 
 			results[i] = nodeData{

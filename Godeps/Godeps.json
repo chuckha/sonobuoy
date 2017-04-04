@@ -376,7 +376,7 @@
 		},
 		{
 			"ImportPath": "github.com/coreos/rkt/api/v1alpha",
-			"Comment": "v1.11.0-59-ga83419b",
+			"Comment": "v1.11.0-59-ga83419be",
 			"Rev": "a83419be28ac626876f94a28b4df2dbc9eac7448"
 		},
 		{
@@ -390,12 +390,12 @@
 		},
 		{
 			"ImportPath": "github.com/docker/distribution/digest",
-			"Comment": "v2.4.0-rc.1-38-gcd27f17",
+			"Comment": "v2.4.0-rc.1-38-gcd27f179",
 			"Rev": "cd27f179f2c10c5d300e6d09025b538c475b0d51"
 		},
 		{
 			"ImportPath": "github.com/docker/distribution/reference",
-			"Comment": "v2.4.0-rc.1-38-gcd27f17",
+			"Comment": "v2.4.0-rc.1-38-gcd27f179",
 			"Rev": "cd27f179f2c10c5d300e6d09025b538c475b0d51"
 		},
 		{
@@ -601,22 +601,22 @@
 		},
 		{
 			"ImportPath": "github.com/gogo/protobuf/gogoproto",
-			"Comment": "v0.2-33-ge18d7aa",
+			"Comment": "v0.2-33-ge18d7aa8",
 			"Rev": "e18d7aa8f8c624c915db340349aad4c49b10d173"
 		},
 		{
 			"ImportPath": "github.com/gogo/protobuf/proto",
-			"Comment": "v0.2-33-ge18d7aa",
+			"Comment": "v0.2-33-ge18d7aa8",
 			"Rev": "e18d7aa8f8c624c915db340349aad4c49b10d173"
 		},
 		{
 			"ImportPath": "github.com/gogo/protobuf/protoc-gen-gogo/descriptor",
-			"Comment": "v0.2-33-ge18d7aa",
+			"Comment": "v0.2-33-ge18d7aa8",
 			"Rev": "e18d7aa8f8c624c915db340349aad4c49b10d173"
 		},
 		{
 			"ImportPath": "github.com/gogo/protobuf/sortkeys",
-			"Comment": "v0.2-33-ge18d7aa",
+			"Comment": "v0.2-33-ge18d7aa8",
 			"Rev": "e18d7aa8f8c624c915db340349aad4c49b10d173"
 		},
 		{
@@ -900,18 +900,18 @@
 		},
 		{
 			"ImportPath": "github.com/influxdata/influxdb/client/v2",
-			"Comment": "v0.12.2",
-			"Rev": "383332daed5595926c235f250b11433f67229c35"
+			"Comment": "v1.1.1",
+			"Rev": "e47cf1f2e83a02443d7115c54f838be8ee959644"
 		},
 		{
 			"ImportPath": "github.com/influxdata/influxdb/models",
-			"Comment": "v0.12.2",
-			"Rev": "383332daed5595926c235f250b11433f67229c35"
+			"Comment": "v1.1.1",
+			"Rev": "e47cf1f2e83a02443d7115c54f838be8ee959644"
 		},
 		{
 			"ImportPath": "github.com/influxdata/influxdb/pkg/escape",
-			"Comment": "v0.12.2",
-			"Rev": "383332daed5595926c235f250b11433f67229c35"
+			"Comment": "v1.1.1",
+			"Rev": "e47cf1f2e83a02443d7115c54f838be8ee959644"
 		},
 		{
 			"ImportPath": "github.com/jmespath/go-jmespath",
@@ -1210,6 +1210,7 @@
 		},
 		{
 			"ImportPath": "github.com/pelletier/go-buffruneio",
+			"Comment": "v0.1.0",
 			"Rev": "df1e16fde7fc330a0ca68167c23bf7ed6ac31d6d"
 		},
 		{
@@ -1251,6 +1252,11 @@
 		{
 			"ImportPath": "github.com/prometheus/procfs",
 			"Rev": "454a56f35412459b5e684fd5ec0f9211b94f002a"
+		},
+		{
+			"ImportPath": "github.com/renstrom/dedent",
+			"Comment": "v1.0.0-3-g020d11c",
+			"Rev": "020d11c3b9c0c7a3c2efcc8e5cf5b9ef7bcea21f"
 		},
 		{
 			"ImportPath": "github.com/satori/go.uuid",
