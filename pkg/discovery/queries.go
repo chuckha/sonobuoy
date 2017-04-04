@@ -186,5 +186,11 @@ func QueryNonNSResources(kubeClient kubernetes.Interface, outpath string, dc *Co
 			return err
 		}
 	}
+
+	if dc.HostFacts {
+		if err = gatherHostFacts(kubeClient, outpath, dc); err != nil {
+			return err
+		}
+	}
 	return nil
 }

@@ -24,19 +24,73 @@ spec:
         component: sonobuoy
         tier: analysis
     spec:
+      restartPolicy: Never
+      serviceAccountName: sonobuoy-serviceaccount
+
       containers:
         - name: kube-sonobuoy
           image: gcr.io/heptio-images/sonobuoy:v0.1
-          imagePullPolicy: IfNotPresent
+          imagePullPolicy: Always
           volumeMounts:
-          - name: config-volume
+          - name: sonobuoy-config-volume
             mountPath: /etc/sonobuoy
-      restartPolicy: Never
+          - name: output-volume
+            mountPath: /tmp/output
+          - name: ssh-config-volume
+            mountPath: /root/.ssh
+
       volumes: 
-        - name: config-volume
+        - name: sonobuoy-config-volume
           configMap:
             name: sonobuoy-cm
+        - name: output-volume
+          # TODO: make this something persistent, this is nice for testing
+          hostPath:
+            path: /tmp/sonobuoy-output
+        - name: ssh-config-volume
+          secret:
+            secretName: sonobuoy-secrets
+            items:
+            - key: ssh-key
+              mode: 0600
+              path: id_rsa
+
+---
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: ClusterRoleBinding
+metadata:
+  name: sonobuoy-serviceaccount
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: sonobuoy-serviceaccount
+subjects:
+- kind: ServiceAccount
+  name: sonobuoy-serviceaccount
+  namespace: kube-system
+---
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1beta1
+metadata:
+  name: sonobuoy-serviceaccount
+  namespace: kube-system
+rules:
+  - apiGroups:
+    - "*"
+    resources:
+    - "*"
+    verbs:
+    - "get"
+    - "list"
+    - "watch"
+    - "proxy"
+    - "redirect"
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: sonobuoy-serviceaccount
+  namespace: kube-system
 
 # TODO - This will need a volume mount to record the data
 # TODO - Default to using hostPath as a priviledged container?
- 
