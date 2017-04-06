@@ -26,7 +26,7 @@ import (
 )
 
 // Run is the main entrypoint for discovery
-func Run(stopCh <-chan struct{}) []error {
+func Run(stopCh <-chan struct{}, version string) []error {
 	var wg sync.WaitGroup
 	var m sync.Mutex
 	var errlst []error
@@ -34,6 +34,7 @@ func Run(stopCh <-chan struct{}) []error {
 
 	// 0. Load the config
 	kubeClient, dc := LoadConfig()
+	dc.Version = version
 
 	// 1. Get the list of namespaces and apply the regex filter on the namespace
 	nslist := FilterNamespaces(kubeClient, dc.Namespaces)

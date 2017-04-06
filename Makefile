@@ -26,7 +26,7 @@ BUILD_IMAGE ?= golang:1.7
 # BUILD_IMAGE ?= golang:1.7-alpine3.5
 DOCKER ?= docker
 DIR := ${CURDIR}
-BUILD = go build -v && go test -i -c -o $(TESTTARGET) $(TESTSRCS)
+BUILD = go build -v -ldflags "-X main.version=$(VERSION)" && go test -i -c -o $(TESTTARGET) $(TESTSRCS)
 TEST = go test $(GOTARGET)/pkg/discovery
 
 local: 
@@ -38,7 +38,7 @@ test:
 all: cbuild container
 
 cbuild: 
-	$(DOCKER) run --rm -v $(DIR):$(BUILDMNT) -w $(BUILDMNT) $(BUILD_IMAGE) $(BUILD) && $(TEST)
+	$(DOCKER) run --rm -v $(DIR):$(BUILDMNT) -w $(BUILDMNT) $(BUILD_IMAGE) $(BUILD)
 
 container: cbuild
 	$(DOCKER) build -t $(REGISTRY)/$(TARGET):latest -t $(REGISTRY)/$(TARGET):$(VERSION) .

@@ -36,8 +36,10 @@ const (
 
 // Config is the input struct used to determine what data to collect
 type Config struct {
-	// UUID string to identify a test run.
-	UUID string `json:"UUID"`
+	// strings to identify a test run.
+	UUID        string `json:"UUID"`
+	Description string `json:"description"`
+	Version     string `json:"version"`
 
 	// Location to store the output results
 	ResultsDir string `json:"resultsdir"`
@@ -108,6 +110,7 @@ type SonoCfg struct {
 // SetConfigDefaults sets up the defaults in case input is sparse.
 func SetConfigDefaults(dc *Config) {
 	dc.UUID = uuid.NewV4().String()
+	dc.Description = "NONE"
 	dc.ResultsDir = "./results"
 	dc.SshRemoteUser = "root"
 	dc.Runtests = false
@@ -145,6 +148,7 @@ func SetConfigDefaults(dc *Config) {
 	dc.StorageClasses = true
 	dc.ThirdPartyResources = true
 	dc.HostFacts = true
+
 }
 
 // ResourcesToQuery returns the list of NS and non-NS resource types that are
