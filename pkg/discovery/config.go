@@ -56,10 +56,8 @@ type Config struct {
 	Namespaces string `json:"namespaces"`
 
 	// Namespace scoped
-	// certificatesigningrequests bool
-	// clusters				bool
-	// networkpolicies          bool `json:"networkpolicies"`
 	ConfigMaps               bool `json:"configmaps" resource:"ns"`
+	CronJobs                 bool `json:"cronjobs" resource:"ns"`
 	DaemonSets               bool `json:"daemonsets" resource:"ns"`
 	Deployments              bool `json:"deployments" resource:"ns"`
 	Endpoints                bool `json:"endpoints" resource:"ns"`
@@ -71,6 +69,7 @@ type Config struct {
 	PersistentVolumeClaims   bool `json:"persistentvolumeclaims" resource:"ns"`
 	Pods                     bool `json:"pods" resource:"ns"`
 	PodDisruptionBudgets     bool `json:"poddisruptionbudgets" resource:"ns"`
+	PodPresets               bool `json:"podpresets" resource:"ns"`
 	PodTemplates             bool `json:"podtemplates" resource:"ns"`
 	ReplicaSets              bool `json:"replicasets" resource:"ns"`
 	ReplicationControllers   bool `json:"replicationcontrollers" resource:"ns"`
@@ -81,16 +80,18 @@ type Config struct {
 	ServiceAccounts          bool `json:"serviceaccounts" resource:"ns"`
 	Services                 bool `json:"services" resource:"ns"`
 	StatefulSets             bool `json:"statefulsets" resource:"ns"`
+	// networkpolicies          bool `json:"networkpolicies"`
 
 	// Non-NSScoped.
-	ClusterRoleBindings bool `json:"clusterrolebindings" resource:"non-ns"`
-	ClusterRoles        bool `json:"clusterroles" resource:"non-ns"`
-	ComponentStatuses   bool `json:"componentstatuses" resource:"non-ns"`
-	Nodes               bool `json:"nodes" resource:"non-ns"`
-	PersistentVolumes   bool `json:"persistentvolumes" resource:"non-ns"`
-	PodSecurityPolicies bool `json:"podsecuritypolicies" resource:"non-ns"`
-	StorageClasses      bool `json:"storageclasses" resource:"non-ns"`
-	ThirdPartyResources bool `json:"thirdpartyresources" resource:"non-ns"`
+	CertificateSigningRequests bool `json:"certificatesigningrequests" resource:"non-ns"`
+	ClusterRoleBindings        bool `json:"clusterrolebindings" resource:"non-ns"`
+	ClusterRoles               bool `json:"clusterroles" resource:"non-ns"`
+	ComponentStatuses          bool `json:"componentstatuses" resource:"non-ns"`
+	Nodes                      bool `json:"nodes" resource:"non-ns"`
+	PersistentVolumes          bool `json:"persistentvolumes" resource:"non-ns"`
+	PodSecurityPolicies        bool `json:"podsecuritypolicies" resource:"non-ns"`
+	StorageClasses             bool `json:"storageclasses" resource:"non-ns"`
+	ThirdPartyResources        bool `json:"thirdpartyresources" resource:"non-ns"`
 
 	// Other properties
 	HostFacts     bool `json:"hostfacts"`
@@ -99,8 +100,7 @@ type Config struct {
 	// TODOs:
 	// 1. Master component /configz
 	// 2. Add support for label selection? (Whitelist, Blacklist)
-	// 3. Pod RegEx query? (workload issue)
-	// 4. Other api-types.
+	// 3. Other new api-types.
 }
 
 // SonoCfg is used to export a config
@@ -118,10 +118,12 @@ func SetConfigDefaults(dc *Config) {
 	dc.TestFocusRegex = "Conformance"
 	dc.TestSkipRegex = "Alpha|Disruptive|Feature|Flaky|Serial"
 	dc.Namespaces = ".*"
+	dc.CertificateSigningRequests = true
 	dc.ClusterRoleBindings = true
 	dc.ClusterRoles = true
 	dc.ComponentStatuses = true
 	dc.ConfigMaps = true
+	dc.CronJobs = false
 	dc.DaemonSets = true
 	dc.Deployments = true
 	dc.Endpoints = true
@@ -135,6 +137,7 @@ func SetConfigDefaults(dc *Config) {
 	dc.PersistentVolumes = true
 	dc.Pods = true
 	dc.PodDisruptionBudgets = true
+	dc.PodPresets = true
 	dc.PodSecurityPolicies = true
 	dc.PodTemplates = true
 	dc.ReplicaSets = true
@@ -150,7 +153,6 @@ func SetConfigDefaults(dc *Config) {
 	dc.StorageClasses = true
 	dc.ThirdPartyResources = true
 	dc.HostFacts = false
-
 }
 
 // ResourcesToQuery returns the list of NS and non-NS resource types that are
