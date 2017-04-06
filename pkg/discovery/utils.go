@@ -53,7 +53,6 @@ func SerializeObj(obj interface{}, outpath string, file string) error {
 	var err error
 	if err = os.Mkdir(outpath, 0755); err == nil {
 		if eJSONBytes, err := json.Marshal(obj); err == nil {
-			glog.V(5).Infof("%v", string(eJSONBytes))
 			err = ioutil.WriteFile(outpath+"/"+file, eJSONBytes, 0644)
 		}
 	}
@@ -65,7 +64,6 @@ func SerializeArrayObj(objs []interface{}, outpath string, file string) error {
 	var err error
 	if err = os.Mkdir(outpath, 0755); err == nil {
 		if eJSONBytes, err := json.Marshal(objs); err == nil {
-			glog.V(5).Infof("%v", string(eJSONBytes))
 			err = ioutil.WriteFile(outpath+"/"+file, eJSONBytes, 0644)
 		}
 	}

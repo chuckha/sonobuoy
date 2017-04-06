@@ -80,6 +80,8 @@ func queryNsResource(ns string, resourceKind string, kubeClient kubernetes.Inter
 	switch resourceKind {
 	case "configmaps":
 		return kubeClient.CoreV1().ConfigMaps(ns).List(metav1.ListOptions{})
+	case "cronjobs":
+		return kubeClient.BatchV2alpha1().CronJobs(ns).List(metav1.ListOptions{})
 	case "daemonsets":
 		return kubeClient.Extensions().DaemonSets(ns).List(metav1.ListOptions{})
 	case "deployments":
@@ -102,6 +104,8 @@ func queryNsResource(ns string, resourceKind string, kubeClient kubernetes.Inter
 		return kubeClient.CoreV1().Pods(ns).List(metav1.ListOptions{})
 	case "poddisruptionbudgets":
 		return kubeClient.Policy().PodDisruptionBudgets(ns).List(metav1.ListOptions{})
+	case "podpresets":
+		return kubeClient.Settings().PodPresets(ns).List(metav1.ListOptions{})
 	case "podtemplates":
 		return kubeClient.CoreV1().PodTemplates(ns).List(metav1.ListOptions{})
 	case "replicasets":
@@ -130,6 +134,8 @@ func queryNsResource(ns string, resourceKind string, kubeClient kubernetes.Inter
 
 func queryNonNsResource(resourceKind string, kubeClient kubernetes.Interface) (runtime.Object, error) {
 	switch resourceKind {
+	case "certificatesigningrequests":
+		return kubeClient.Certificates().CertificateSigningRequests().List(metav1.ListOptions{})
 	case "clusterrolebindings":
 		return kubeClient.Rbac().ClusterRoleBindings().List(metav1.ListOptions{})
 	case "clusterroles":
