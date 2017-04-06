@@ -25,6 +25,9 @@ import (
 	"github.com/heptio/sonobuoy/pkg/discovery"
 )
 
+// TODO figure out why -ldflags are not passed down on subsequent libraries
+var version string
+
 // setup a signal hander to gracefully exit
 func sigHandler() <-chan struct{} {
 	stop := make(chan struct{})
@@ -46,7 +49,7 @@ func sigHandler() <-chan struct{} {
 
 // main entry point of the program
 func main() {
-	if errlist := discovery.Run(sigHandler()); errlist != nil {
+	if errlist := discovery.Run(sigHandler(), version); errlist != nil {
 		for _, err := range errlist {
 			glog.Errorf("%v", err)
 		}
