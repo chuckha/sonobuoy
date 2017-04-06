@@ -18,8 +18,6 @@ package discovery
 
 import (
 	"encoding/json"
-	"io/ioutil"
-	"os"
 
 	"github.com/golang/glog"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -32,28 +30,6 @@ type nodeData struct {
 	ConfigzOutput map[string]interface{} `json:"configzOutput,omitempty"`
 	HealthzStatus int                    `json:"healthzStatus,omitempty"`
 }
-
-type ListerA func() ([]interface{}, error)
-
-func createresults(outpath string, file string, condition bool, f ListerA) error {
-	// Short-circuit early if we're not configured to gather these results
-	if !condition {
-		return nil
-	}
-
-	listObj, err := f()
-	if err == nil && listObj != nil {
-		if err = os.Mkdir(outpath, 0755); err == nil {
-			if eJSONBytes, err := json.Marshal(listObj); err == nil {
-				glog.V(5).Infof("%v", string(eJSONBytes))
-				err = ioutil.WriteFile(outpath+"/"+file, eJSONBytes, 0644)
-			}
-		}
-	}
-	return err
-}
-
-// TODO: Determine if it makes sense to reuse for masters.
 
 func gatherNodeData(kubeClient kubernetes.Interface, outpath string, dc *Config) error {
 	f := func() ([]interface{}, error) {
@@ -100,5 +76,5 @@ func gatherNodeData(kubeClient kubernetes.Interface, outpath string, dc *Config)
 		return results, nil
 	}
 
-	return createresults(outpath+"/node-data", "nodes.json", dc.Nodes, f)
+	return untypedListQuery(outpath+"/node-data", "nodes.json", f)
 }
