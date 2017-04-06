@@ -17,9 +17,7 @@ limitations under the License.
 package discovery
 
 import (
-	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"os"
 
 	"github.com/golang/glog"
@@ -32,15 +30,19 @@ import (
 )
 
 // TODO:
-// 1. This will change quite a bit once we have conversion from bool <> string
-// 2. Pass back errors through channel
-// 3. map of name<>function.
+// 1. Pass back errors through channel
+// 2. map of name<>function. (debatable if we want to do this)
 
-// Lister is something that can enumerate any array of results that can be
-// dumped as json (so, any object really)
-type Lister func() (runtime.Object, error)
+// ObjQuery is a query function that returns a kubernetes object
+type ObjQuery func() (runtime.Object, error)
 
-func listquery(outpath string, file string, f Lister) error {
+// UntypedQuery is a query function that return an untyped array of objs
+type UntypedQuery func() (interface{}, error)
+
+// UntypedListQuery is a query function that return an untyped array of objs
+type UntypedListQuery func() ([]interface{}, error)
+
+func objListQuery(outpath string, file string, f ObjQuery) error {
 	listObj, err := f()
 	if err != nil {
 		return err
@@ -51,14 +53,25 @@ func listquery(outpath string, file string, f Lister) error {
 	if listPtr, err := meta.GetItemsPtr(listObj); err == nil {
 		if items, err := conversion.EnforcePtr(listPtr); err == nil {
 			if items.Len() > 0 {
-				if err = os.Mkdir(outpath, 0755); err == nil {
-					if eJSONBytes, err := json.Marshal(listPtr); err == nil {
-						glog.V(5).Infof("%v", string(eJSONBytes))
-						err = ioutil.WriteFile(outpath+"/"+file, eJSONBytes, 0644)
-					}
-				}
+				err = SerializeObj(listPtr, outpath, file)
 			}
 		}
+	}
+	return err
+}
+
+func untypedQuery(outpath string, file string, f UntypedQuery) error {
+	Obj, err := f()
+	if err == nil && Obj != nil {
+		err = SerializeObj(Obj, outpath, file)
+	}
+	return err
+}
+
+func untypedListQuery(outpath string, file string, f UntypedListQuery) error {
+	listObj, err := f()
+	if err == nil && listObj != nil {
+		err = SerializeArrayObj(listObj, outpath, file)
 	}
 	return err
 }
@@ -154,7 +167,7 @@ func QueryNSResources(kubeClient kubernetes.Interface, outpath string, ns string
 		// that aren't "ns"
 		if resourceScope == "ns" {
 			lister := func() (runtime.Object, error) { return queryNsResource(ns, resourceKind, kubeClient) }
-			err = listquery(outdir+"/"+resourceKind, resourceKind+".json", lister)
+			err = objListQuery(outdir+"/"+resourceKind, resourceKind+".json", lister)
 			if err != nil {
 				return fmt.Errorf("Error querying %v: %v", resourceKind, err)
 			}
@@ -174,7 +187,7 @@ func QueryNonNSResources(kubeClient kubernetes.Interface, outpath string, dc *Co
 		// that aren't "non-ns"
 		if resourceScope == "non-ns" {
 			lister := func() (runtime.Object, error) { return queryNonNsResource(resourceKind, kubeClient) }
-			err = listquery(outpath+"/"+resourceKind, resourceKind+".json", lister)
+			err = objListQuery(outpath+"/"+resourceKind, resourceKind+".json", lister)
 			if err != nil {
 				return fmt.Errorf("Error querying %v: %v", resourceKind, err)
 			}
@@ -192,5 +205,13 @@ func QueryNonNSResources(kubeClient kubernetes.Interface, outpath string, dc *Co
 			return err
 		}
 	}
+
+	if dc.ServerVersion {
+		objqry := func() (interface{}, error) { return kubeClient.Discovery().ServerVersion() }
+		if err = untypedQuery(outpath+"/serverversion", "serverversion.json", objqry); err != nil {
+			return err
+		}
+	}
+
 	return nil
 }

@@ -37,8 +37,8 @@ const (
 // Config is the input struct used to determine what data to collect
 type Config struct {
 	// strings to identify a test run.
-	UUID        string `json:"UUID"`
 	Description string `json:"description"`
+	UUID        string `json:"UUID"`
 	Version     string `json:"version"`
 
 	// Location to store the output results
@@ -83,17 +83,18 @@ type Config struct {
 	StatefulSets             bool `json:"statefulsets" resource:"ns"`
 
 	// Non-NSScoped.
-	PersistentVolumes   bool `json:"persistentvolumes" resource:"non-ns"`
-	Nodes               bool `json:"nodes" resource:"non-ns"`
-	ComponentStatuses   bool `json:"componentstatuses" resource:"non-ns"`
-	PodSecurityPolicies bool `json:"podsecuritypolicies" resource:"non-ns"`
 	ClusterRoleBindings bool `json:"clusterrolebindings" resource:"non-ns"`
 	ClusterRoles        bool `json:"clusterroles" resource:"non-ns"`
-	ThirdPartyResources bool `json:"thirdpartyresources" resource:"non-ns"`
+	ComponentStatuses   bool `json:"componentstatuses" resource:"non-ns"`
+	Nodes               bool `json:"nodes" resource:"non-ns"`
+	PersistentVolumes   bool `json:"persistentvolumes" resource:"non-ns"`
+	PodSecurityPolicies bool `json:"podsecuritypolicies" resource:"non-ns"`
 	StorageClasses      bool `json:"storageclasses" resource:"non-ns"`
+	ThirdPartyResources bool `json:"thirdpartyresources" resource:"non-ns"`
 
-	// Other behavior
-	HostFacts bool `json:"hostfacts"`
+	// Other properties
+	HostFacts     bool `json:"hostfacts"`
+	ServerVersion bool `json:"serverversion"`
 
 	// TODOs:
 	// 1. Master component /configz
@@ -142,12 +143,13 @@ func SetConfigDefaults(dc *Config) {
 	dc.RoleBindings = true
 	dc.Roles = true
 	dc.Secrets = false
+	dc.ServerVersion = true
 	dc.ServiceAccounts = true
 	dc.Services = true
 	dc.StatefulSets = true
 	dc.StorageClasses = true
 	dc.ThirdPartyResources = true
-	dc.HostFacts = true
+	dc.HostFacts = false
 
 }
 

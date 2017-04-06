@@ -17,6 +17,9 @@ limitations under the License.
 package discovery
 
 import (
+	"encoding/json"
+	"io/ioutil"
+	"os"
 	"regexp"
 
 	"github.com/golang/glog"
@@ -43,4 +46,28 @@ func FilterNamespaces(kubeClient kubernetes.Interface, filter string) []string {
 		panic(err.Error())
 	}
 	return validns
+}
+
+// SerializeObj will write out an object
+func SerializeObj(obj interface{}, outpath string, file string) error {
+	var err error
+	if err = os.Mkdir(outpath, 0755); err == nil {
+		if eJSONBytes, err := json.Marshal(obj); err == nil {
+			glog.V(5).Infof("%v", string(eJSONBytes))
+			err = ioutil.WriteFile(outpath+"/"+file, eJSONBytes, 0644)
+		}
+	}
+	return err
+}
+
+// SerializeArrayObj will write out an array of object
+func SerializeArrayObj(objs []interface{}, outpath string, file string) error {
+	var err error
+	if err = os.Mkdir(outpath, 0755); err == nil {
+		if eJSONBytes, err := json.Marshal(objs); err == nil {
+			glog.V(5).Infof("%v", string(eJSONBytes))
+			err = ioutil.WriteFile(outpath+"/"+file, eJSONBytes, 0644)
+		}
+	}
+	return err
 }
