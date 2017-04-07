@@ -142,8 +142,9 @@ func queryNonNsResource(resourceKind string, kubeClient kubernetes.Interface) (r
 		return kubeClient.Rbac().ClusterRoles().List(metav1.ListOptions{})
 	case "componentstatuses":
 		return kubeClient.CoreV1().ComponentStatuses().List(metav1.ListOptions{})
+	/* Nodes are special cased
 	case "nodes":
-		return kubeClient.CoreV1().Nodes().List(metav1.ListOptions{})
+	return kubeClient.CoreV1().Nodes().List(metav1.ListOptions{})*/
 	case "persistentvolumes":
 		return kubeClient.CoreV1().PersistentVolumes().List(metav1.ListOptions{})
 	case "podsecuritypolicies":
