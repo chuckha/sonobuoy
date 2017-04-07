@@ -39,7 +39,7 @@ func Run(stopCh <-chan struct{}, version string) []error {
 	// 1. Get the list of namespaces and apply the regex filter on the namespace
 	nslist := FilterNamespaces(kubeClient, dc.Namespaces)
 
-	// 3. Create the directory which wil store the results
+	// 3. Create the directory which will store the results
 	outpath := dc.ResultsDir + "/" + dc.UUID
 	err := os.MkdirAll(outpath+"/namespaces", 0755)
 	if err != nil {
@@ -73,12 +73,11 @@ func Run(stopCh <-chan struct{}, version string) []error {
 	}
 
 	// TODO: Determine the level of parallelism we consider acceptable.
-	// We can be throttled by the client to just let loose queries and channel back errors.
 	go spawn(QueryNonNSResources(kubeClient, outpath, dc))
 	for _, ns := range nslist {
 		go spawn(QueryNSResources(kubeClient, outpath+"/namespaces", ns, dc))
 	}
-	go spawn(rune2e(outpath, dc))
+	go spawn(rune2e(outpath+"/tests", dc))
 	go waitcomplete()
 
 	//6. Block until completion or kill signal
