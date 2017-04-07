@@ -76,5 +76,5 @@ func gatherNodeData(kubeClient kubernetes.Interface, outpath string, dc *Config)
 		return results, nil
 	}
 
-	return untypedListQuery(outpath+"/node-data", "nodes.json", f)
+	return untypedListQuery(outpath+"/nodes", "nodes.json", f)
 }
