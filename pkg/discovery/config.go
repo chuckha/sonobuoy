@@ -18,11 +18,14 @@ package discovery
 
 import (
 	"flag"
+	"path"
 	"reflect"
 	"strings"
 
 	"github.com/satori/go.uuid"
 	"github.com/spf13/viper"
+
+	"os"
 
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -45,7 +48,7 @@ type Config struct {
 	ResultsDir string `json:"resultsdir"`
 
 	// Configuration for ansible
-	SshRemoteUser string `json:"sshremoteuser"`
+	SSHRemoteUser string `json:"sshremoteuser"`
 
 	// regex filters for e2es
 	Runtests       bool   `json:"runtests"`
@@ -117,7 +120,7 @@ func SetConfigDefaults(dc *Config) {
 	dc.UUID = uuid.NewV4().String()
 	dc.Description = "NONE"
 	dc.ResultsDir = "./results"
-	dc.SshRemoteUser = "root"
+	dc.SSHRemoteUser = "root"
 	dc.Runtests = false
 	dc.Provider = "local"
 	dc.TestFocusRegex = "Conformance"
@@ -158,6 +161,12 @@ func SetConfigDefaults(dc *Config) {
 	dc.StorageClasses = true
 	dc.ThirdPartyResources = true
 	dc.HostFacts = false
+}
+
+// OutputDir returns the directory under the ResultsDir containing the
+// UUID for this run.
+func (dc *Config) OutputDir() string {
+	return path.Join(dc.ResultsDir, dc.UUID)
 }
 
 // ResourcesToQuery returns the list of NS and non-NS resource types that are
@@ -213,6 +222,11 @@ func LoadConfig() (kubernetes.Interface, *Config) {
 	viper.AddConfigPath(".")
 	viper.SetDefault("kubeconfig", "")
 	viper.BindEnv("kubeconfig")
+	// Allow specifying a custom config file via the SONOBUOY_CONFIG env var
+	if forceCfg := os.Getenv("SONOBUOY_CONFIG"); forceCfg != "" {
+		viper.SetConfigFile(forceCfg)
+	}
+
 	SetConfigDefaults(&dc)
 
 	// 1 - Read in the config file.

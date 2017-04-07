@@ -51,7 +51,7 @@ func FilterNamespaces(kubeClient kubernetes.Interface, filter string) []string {
 // SerializeObj will write out an object
 func SerializeObj(obj interface{}, outpath string, file string) error {
 	var err error
-	if err = os.Mkdir(outpath, 0755); err == nil {
+	if err = os.MkdirAll(outpath, 0755); err == nil {
 		if eJSONBytes, err := json.Marshal(obj); err == nil {
 			err = ioutil.WriteFile(outpath+"/"+file, eJSONBytes, 0644)
 		}
@@ -62,7 +62,7 @@ func SerializeObj(obj interface{}, outpath string, file string) error {
 // SerializeArrayObj will write out an array of object
 func SerializeArrayObj(objs []interface{}, outpath string, file string) error {
 	var err error
-	if err = os.Mkdir(outpath, 0755); err == nil {
+	if err = os.MkdirAll(outpath, 0755); err == nil {
 		if eJSONBytes, err := json.Marshal(objs); err == nil {
 			err = ioutil.WriteFile(outpath+"/"+file, eJSONBytes, 0644)
 		}

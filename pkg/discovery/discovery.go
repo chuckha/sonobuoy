@@ -39,14 +39,14 @@ func Run(stopCh <-chan struct{}, version string) []error {
 	// 1. Get the list of namespaces and apply the regex filter on the namespace
 	nslist := FilterNamespaces(kubeClient, dc.Namespaces)
 
-	// 3. Create the directory which will store the results
+	// 2. Create the directory which will store the results
 	outpath := dc.ResultsDir + "/" + dc.UUID
-	err := os.MkdirAll(outpath+"/namespaces", 0755)
+	err := os.MkdirAll(outpath, 0755)
 	if err != nil {
 		panic(err.Error())
 	}
 
-	// 4. Dump the config.json we used to run our test
+	// 3. Dump the config.json we used to run our test
 	if blob, err := json.Marshal(dc); err == nil {
 		if err = ioutil.WriteFile(outpath+"/config.json", blob, 0644); err != nil {
 			panic(err.Error())
@@ -57,7 +57,7 @@ func Run(stopCh <-chan struct{}, version string) []error {
 	// Gather as many errors as possible get as far as we can, but only dump on success.
 	// Errors should not be in-band.
 
-	// 5. Launch queries concurrently
+	// 4. Launch queries concurrently
 	wg.Add(len(nslist) + 2)
 	spawn := func(err error) {
 		defer wg.Done()
@@ -73,14 +73,14 @@ func Run(stopCh <-chan struct{}, version string) []error {
 	}
 
 	// TODO: Determine the level of parallelism we consider acceptable.
-	go spawn(QueryNonNSResources(kubeClient, outpath, dc))
+	go spawn(QueryNonNSResources(kubeClient, dc))
 	for _, ns := range nslist {
-		go spawn(QueryNSResources(kubeClient, outpath+"/namespaces", ns, dc))
+		go spawn(QueryNSResources(kubeClient, ns, dc))
 	}
-	go spawn(rune2e(outpath+"/tests", dc))
+	go spawn(rune2e(dc))
 	go waitcomplete()
 
-	//6. Block until completion or kill signal
+	// 5. Block until completion or kill signal
 	select {
 	case <-stopCh:
 		// signal raised just exit
