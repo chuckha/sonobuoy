@@ -27,7 +27,7 @@
         "resultsdir": "./results",
         "rolebindings": true,
         "roles": true,
-        "runtests": false,
+        "runtests": true,
         "secrets": false,
         "serviceaccounts": true,
         "services": true,

@@ -51,6 +51,7 @@ type Config struct {
 	Runtests       bool   `json:"runtests"`
 	TestFocusRegex string `json:"testfocusregex"`
 	TestSkipRegex  string `json:"testskipregex"`
+	Provider       string `json:"provider"`
 
 	// regex to define namespace collection default=*
 	Namespaces string `json:"namespaces"`
@@ -97,8 +98,11 @@ type Config struct {
 	HostFacts     bool `json:"hostfacts"`
 	ServerVersion bool `json:"serverversion"`
 
+	// Non-serialized used for internal passing.
+	kubeconfig string
+
 	// TODOs:
-	// 1. Master component /configz
+	// 1. Master component /configz (Still unsupported)
 	// 2. Add support for label selection? (Whitelist, Blacklist)
 	// 3. Other new api-types.
 }
@@ -115,8 +119,9 @@ func SetConfigDefaults(dc *Config) {
 	dc.ResultsDir = "./results"
 	dc.SshRemoteUser = "root"
 	dc.Runtests = false
+	dc.Provider = "local"
 	dc.TestFocusRegex = "Conformance"
-	dc.TestSkipRegex = "Alpha|Disruptive|Feature|Flaky|Serial"
+	dc.TestSkipRegex = "Alpha|Disruptive|Feature|Flaky|Kubectl"
 	dc.Namespaces = ".*"
 	dc.CertificateSigningRequests = true
 	dc.ClusterRoleBindings = true
@@ -223,6 +228,7 @@ func LoadConfig() (kubernetes.Interface, *Config) {
 	// 3 - gather config information used to initialize
 	kubeconfig := viper.GetString("kubeconfig")
 	if len(kubeconfig) > 0 {
+		dc.kubeconfig = kubeconfig
 		config, err = clientcmd.BuildConfigFromFlags("", kubeconfig)
 	} else {
 		config, err = rest.InClusterConfig()

@@ -17,16 +17,43 @@ limitations under the License.
 package discovery
 
 import (
+	"io/ioutil"
+	"os"
+	"os/exec"
+
 	"github.com/golang/glog"
 )
 
 // kicker for e2es, look at discovery.
 func rune2e(outpath string, dc *Config) error {
 	var err error
-	// TODO: call battery.test with a valid set of args to output into the directory
 	if dc.Runtests {
-		glog.Info("Running tests...")
-	}
+		var e2eout []byte
 
+		// 1. Make the output directory.
+		if err = os.MkdirAll(outpath, 0755); err != nil {
+			return err
+		}
+
+		// 2. Setup the e2e test execution
+		cmd := exec.Command("./battery.test", "--ginkgo.focus=\""+dc.TestFocusRegex+"\"", "--ginkgo.skip=\""+dc.TestSkipRegex+"\"", "--provider=\""+dc.Provider+"\"", "--report-dir="+outpath, "--ginkgo.noColor=true")
+		cmd.Env = os.Environ()
+
+		// TODO: OK this is a mess in the framework tooling.
+		if len(dc.kubeconfig) > 0 {
+			cmd.Env = append(cmd.Env, "KUBECONFIG="+dc.kubeconfig)
+		}
+
+		glog.Infof("Executing e2es: [%v %v]", cmd.Path, cmd.Args)
+
+		// 3. blocking run
+		e2eout, err = cmd.CombinedOutput()
+		if e2eout != nil {
+			if werr := ioutil.WriteFile(outpath+"/e2e.txt", e2eout, 0644); werr != nil {
+				glog.Warningf("Failed to write e2e.txt file (%v)", werr)
+			}
+		}
+
+	}
 	return err
 }
