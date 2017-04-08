@@ -30,37 +30,42 @@ import (
 	"github.com/renstrom/dedent"
 )
 
+const (
+	// ConfigLocation is the directory under the configured ansible output path under which the configuration is stored
+	ConfigLocation = "config"
+	// ResultsLocation is the directory under the configured ansible output path under which the resulting host data
+	ResultsLocation = "results"
+)
+
 // Config represents the configuration of ansible for reaching out to physical
 // hosts in the cluster.
 type Config struct {
-	Hosts      []string `json:"hosts"`
-	RemoteUser string   `json:"remoteuser"`
-	OutputDir  string   `json:"outputdir"`
+	Hosts      map[string]string `json:"hosts"`
+	RemoteUser string            `json:"remoteuser"`
+	OutputDir  string            `json:"outputdir"`
 }
 
-const configDir string = ".ansiblecfg"
-const outDir string = "node-data"
-
 func writeAnsibleConfig(cfg *Config) error {
-	prefix := path.Join(cfg.OutputDir, configDir)
+	confdir := path.Join(cfg.OutputDir, ConfigLocation)
 
+	// Construct the config and hosts files
 	confcontents, err := ansibleConfFile(cfg)
 	if err != nil {
 		return err
 	}
-
 	hostcontents, err := ansibleHostFile(cfg)
 	if err != nil {
 		return err
 	}
 
-	if err = os.MkdirAll(prefix, 0755); err != nil {
+	// Write the contents out
+	if err = os.MkdirAll(confdir, 0755); err != nil {
 		return err
 	}
-	if err = ioutil.WriteFile(path.Join(prefix, "ansible.cfg"), confcontents, 0644); err != nil {
+	if err = ioutil.WriteFile(path.Join(confdir, "ansible.cfg"), confcontents, 0644); err != nil {
 		return err
 	}
-	if err = ioutil.WriteFile(path.Join(prefix, "hosts"), hostcontents, 0644); err != nil {
+	if err = ioutil.WriteFile(path.Join(confdir, "hosts"), hostcontents, 0644); err != nil {
 		return err
 	}
 
@@ -70,10 +75,22 @@ func writeAnsibleConfig(cfg *Config) error {
 func runAnsible(cfg *Config) error {
 	// Find the ansible command
 	ansiblePath, err := exec.LookPath("ansible")
+	resultsdir := path.Join(cfg.OutputDir, ResultsLocation)
 	if err != nil {
 		return fmt.Errorf("could not find ansible binary in $PATH: %v", err)
 	}
-	cmd := exec.Command(ansiblePath, "--ssh-common-args=-o BatchMode=yes", "all", "-m", "setup", "--tree", path.Join(cfg.OutputDir, outDir))
+
+	// Create the temporary output directory if it doesn't exist
+	if err = os.MkdirAll(resultsdir, 0755); err != nil {
+		return err
+	}
+
+	// Ensure it's empty (in case it already exists)
+	if files, _ := ioutil.ReadDir(resultsdir); len(files) > 0 {
+		return fmt.Errorf("ansible output path %v already exists and is non-empty", resultsdir)
+	}
+
+	cmd := exec.Command(ansiblePath, "--ssh-common-args=-o BatchMode=yes", "all", "-m", "setup", "--tree", resultsdir)
 
 	// Write ansible config
 	if err = writeAnsibleConfig(cfg); err != nil {
@@ -82,8 +99,8 @@ func runAnsible(cfg *Config) error {
 
 	// Customize environment variables for running ansible
 	cmd.Env = os.Environ()
-	cmd.Env = append(cmd.Env, "ANSIBLE_CONFIG="+path.Join(cfg.OutputDir, configDir, "ansible.cfg"))
-	cmd.Env = append(cmd.Env, "ANSIBLE_INVENTORY="+path.Join(cfg.OutputDir, configDir, "hosts"))
+	cmd.Env = append(cmd.Env, "ANSIBLE_CONFIG="+path.Join(cfg.OutputDir, ConfigLocation, "ansible.cfg"))
+	cmd.Env = append(cmd.Env, "ANSIBLE_INVENTORY="+path.Join(cfg.OutputDir, ConfigLocation, "hosts"))
 	cmd.Stderr = os.Stderr
 
 	// Start the command in the background
@@ -127,8 +144,8 @@ func ansibleHostFile(cfg *Config) ([]byte, error) {
 	var result bytes.Buffer
 	var err error
 
-	for _, host := range cfg.Hosts {
-		if _, err = result.WriteString(host + "\n"); err != nil {
+	for _, addr := range cfg.Hosts {
+		if _, err = result.WriteString(addr + "\n"); err != nil {
 			return result.Bytes(), err
 		}
 	}

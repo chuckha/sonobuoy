@@ -19,6 +19,7 @@ package discovery
 import (
 	"fmt"
 	"os"
+	"path"
 
 	"github.com/golang/glog"
 
@@ -41,6 +42,15 @@ type UntypedQuery func() (interface{}, error)
 
 // UntypedListQuery is a query function that return an untyped array of objs
 type UntypedListQuery func() ([]interface{}, error)
+
+const (
+	// NSResourceLocation is the place under which namespaced API resources (pods, etc) are stored
+	NSResourceLocation = "resources/ns"
+	// NonNSResourceLocation is the place under which non-namespaced API resources (nodes, etc) are stored
+	NonNSResourceLocation = "resources/non-ns"
+	// HostsLocation is the place under which host information (configz, ansible JSON, etc) is stored
+	HostsLocation = "hosts"
+)
 
 func objListQuery(outpath string, file string, f ObjQuery) error {
 	listObj, err := f()
@@ -142,9 +152,8 @@ func queryNonNsResource(resourceKind string, kubeClient kubernetes.Interface) (r
 		return kubeClient.Rbac().ClusterRoles().List(metav1.ListOptions{})
 	case "componentstatuses":
 		return kubeClient.CoreV1().ComponentStatuses().List(metav1.ListOptions{})
-	/* Nodes are special cased
 	case "nodes":
-	return kubeClient.CoreV1().Nodes().List(metav1.ListOptions{})*/
+		return kubeClient.CoreV1().Nodes().List(metav1.ListOptions{})
 	case "persistentvolumes":
 		return kubeClient.CoreV1().PersistentVolumes().List(metav1.ListOptions{})
 	case "podsecuritypolicies":
@@ -158,15 +167,16 @@ func queryNonNsResource(resourceKind string, kubeClient kubernetes.Interface) (r
 	}
 }
 
-// QueryNSResources will query namespace specific
-func QueryNSResources(kubeClient kubernetes.Interface, outpath string, ns string, dc *Config) error {
+// QueryNSResources will query namespace-specific resources in the cluster,
+// writing them out to <resultsdir>/resources/ns/<ns>/*.json
+func QueryNSResources(kubeClient kubernetes.Interface, ns string, dc *Config) error {
 	var err error
 	glog.Infof("Running ns query (%v)", ns)
 
-	outdir := outpath + "/" + ns
-	err = os.Mkdir(outdir, 0755)
+	outdir := path.Join(dc.OutputDir(), NSResourceLocation, ns)
+	err = os.MkdirAll(outdir, 0755)
 	if err != nil {
-		return fmt.Errorf("could not create output directory %s: %v", outdir, err)
+		return err
 	}
 
 	for resourceKind, resourceScope := range dc.ResourcesToQuery() {
@@ -174,7 +184,7 @@ func QueryNSResources(kubeClient kubernetes.Interface, outpath string, ns string
 		// that aren't "ns"
 		if resourceScope == "ns" {
 			lister := func() (runtime.Object, error) { return queryNsResource(ns, resourceKind, kubeClient) }
-			err = objListQuery(outdir+"/"+resourceKind, resourceKind+".json", lister)
+			err = objListQuery(outdir+"/", resourceKind+".json", lister)
 			if err != nil {
 				return fmt.Errorf("Error querying %v: %v", resourceKind, err)
 			}
@@ -184,38 +194,51 @@ func QueryNSResources(kubeClient kubernetes.Interface, outpath string, ns string
 	return err
 }
 
-// QueryNonNSResources queries non-namespace aware components
-func QueryNonNSResources(kubeClient kubernetes.Interface, outpath string, dc *Config) error {
+// QueryNonNSResources queries non-namespace resources in the cluster, writing
+// them out to <resultsdir>/resources/non-ns/*.json
+func QueryNonNSResources(kubeClient kubernetes.Interface, dc *Config) error {
 	var err error
 	glog.Infof("Running non-ns query")
 
-	for resourceKind, resourceScope := range dc.ResourcesToQuery() {
+	resources := dc.ResourcesToQuery()
+	resourcesOutdir := path.Join(dc.OutputDir(), NonNSResourceLocation)
+
+	if len(resources) > 0 {
+		if err = os.MkdirAll(resourcesOutdir, 0755); err != nil {
+			return err
+		}
+	}
+
+	for resourceKind, resourceScope := range resources {
 		// We use annotations to tag resources as being namespaced vs not, skip any
 		// that aren't "non-ns"
 		if resourceScope == "non-ns" {
 			lister := func() (runtime.Object, error) { return queryNonNsResource(resourceKind, kubeClient) }
-			err = objListQuery(outpath+"/"+resourceKind, resourceKind+".json", lister)
+			err = objListQuery(resourcesOutdir, resourceKind+".json", lister)
 			if err != nil {
 				return fmt.Errorf("Error querying %v: %v", resourceKind, err)
 			}
 		}
 	}
 
+	// dc.Nodes configures whether users want to gather the Nodes resource in the
+	// cluster, but we also use that option to guide whether we get node data such
+	// as configz and healthz endpoints.
 	if dc.Nodes {
-		if err = gatherNodeData(kubeClient, outpath, dc); err != nil {
+		if err = gatherNodeData(kubeClient, dc); err != nil {
 			return err
 		}
 	}
 
 	if dc.HostFacts {
-		if err = gatherHostFacts(kubeClient, outpath, dc); err != nil {
+		if err = gatherHostFacts(kubeClient, dc); err != nil {
 			return err
 		}
 	}
 
 	if dc.ServerVersion {
 		objqry := func() (interface{}, error) { return kubeClient.Discovery().ServerVersion() }
-		if err = untypedQuery(outpath+"/serverversion", "serverversion.json", objqry); err != nil {
+		if err = untypedQuery(dc.OutputDir()+"/serverversion", "serverversion.json", objqry); err != nil {
 			return err
 		}
 	}

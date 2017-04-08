@@ -17,6 +17,10 @@ limitations under the License.
 package discovery
 
 import (
+	"fmt"
+	"os"
+	"path"
+
 	"github.com/golang/glog"
 	"github.com/heptio/sonobuoy/pkg/ansible"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -24,14 +28,14 @@ import (
 	"k8s.io/client-go/pkg/api/v1"
 )
 
-func ansibleConfig(client kubernetes.Interface, outpath string, dc *Config) (*ansible.Config, error) {
+func ansibleConfig(client kubernetes.Interface, dc *Config) (*ansible.Config, error) {
 	nodelist, err := client.CoreV1().Nodes().List(metav1.ListOptions{})
 	if err != nil {
 		return nil, err
 	}
 
-	hostnames := make([]string, len(nodelist.Items))
-	for i, node := range nodelist.Items {
+	hosts := make(map[string]string, len(nodelist.Items))
+	for _, node := range nodelist.Items {
 		addrs := node.Status.Addresses
 		var addr string
 
@@ -53,21 +57,66 @@ func ansibleConfig(client kubernetes.Interface, outpath string, dc *Config) (*an
 			addr = addrs[0].Address
 		}
 
-		hostnames[i] = addr
+		hosts[node.Name] = addr
 	}
+
+	outpath := path.Join(dc.OutputDir(), ".ansible")
+	if err = os.MkdirAll(outpath, 0755); err != nil {
+		return nil, err
+	}
+
 	newcfg := ansible.Config{
 		OutputDir:  outpath,
-		Hosts:      hostnames,
-		RemoteUser: dc.SshRemoteUser,
+		Hosts:      hosts,
+		RemoteUser: dc.SSHRemoteUser,
 	}
 	return &newcfg, err
 }
 
-func gatherHostFacts(client kubernetes.Interface, outpath string, dc *Config) error {
-	acfg, err := ansibleConfig(client, outpath, dc)
+func moveAnsibleResults(acfg *ansible.Config, dc *Config) error {
+	// Where ansible dropped the files for all hosts (eg. results/hosts/.ansible-results)
+	sourcedir := path.Join(acfg.OutputDir, ansible.ResultsLocation)
+	var err error
+
+	for nodeName, addr := range acfg.Hosts {
+		// eg. results/hosts/host1.local/
+		hostdir := path.Join(dc.OutputDir(), HostsLocation, nodeName)
+		dest := path.Join(hostdir, "ansible.json")
+		if err = os.MkdirAll(hostdir, 0755); err != nil {
+			return err
+		}
+
+		// Ansible names the results files after their address, not the node's
+		// logical name. (eg. results/hosts/)
+		ansibleResult := path.Join(sourcedir, addr)
+		err = os.Rename(ansibleResult, dest)
+		if err != nil {
+			return err
+		}
+	}
+
+	// There should really be no other contents in the ansible results directory,
+	// we should be able to remove it safely.
+	if err = os.Remove(sourcedir); err != nil {
+		return fmt.Errorf("could not remove temporary ansible results directory: %v", err)
+	}
+
+	return nil
+}
+
+func gatherHostFacts(client kubernetes.Interface, dc *Config) error {
+	acfg, err := ansibleConfig(client, dc)
 	if err != nil {
 		return err
 	}
 
-	return ansible.GatherHostData(acfg)
+	if err = ansible.GatherHostData(acfg); err != nil {
+		return err
+	}
+
+	if err = moveAnsibleResults(acfg, dc); err != nil {
+		return err
+	}
+
+	return nil
 }
