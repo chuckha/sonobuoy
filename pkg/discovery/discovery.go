@@ -59,12 +59,12 @@ func Run(stopCh <-chan struct{}, version string) []error {
 
 	// 4. Launch queries concurrently
 	wg.Add(len(nslist) + 2)
-	spawn := func(err error) {
+	spawn := func(err []error) {
 		defer wg.Done()
 		defer m.Unlock()
 		m.Lock()
 		if err != nil {
-			errlst = append(errlst, err)
+			errlst = append(errlst, err...)
 		}
 	}
 	waitcomplete := func() {

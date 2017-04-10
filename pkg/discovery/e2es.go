@@ -31,15 +31,16 @@ const (
 )
 
 // kicker for e2es, look at discovery.
-func rune2e(dc *Config) error {
-	var err error
+func rune2e(dc *Config) []error {
+	var errs []error
 	if dc.Runtests {
 		var e2eout []byte
 		resultsPath := path.Join(dc.OutputDir(), TestsResultsLocation)
 
 		// 1. Make the output directory.
-		if err = os.MkdirAll(resultsPath, 0755); err != nil {
-			return err
+		if err := os.MkdirAll(resultsPath, 0755); err != nil {
+			errs = append(errs, err)
+			return errs
 		}
 
 		// 2. Setup the e2e test execution
@@ -50,17 +51,19 @@ func rune2e(dc *Config) error {
 		if len(dc.kubeconfig) > 0 {
 			cmd.Env = append(cmd.Env, "KUBECONFIG="+dc.kubeconfig)
 		}
-
 		glog.Infof("Executing e2es: [%v %v]", cmd.Path, cmd.Args)
 
 		// 3. blocking run
-		e2eout, err = cmd.CombinedOutput()
+		e2eout, err := cmd.CombinedOutput()
 		if e2eout != nil {
 			if werr := ioutil.WriteFile(resultsPath+"/e2e.txt", e2eout, 0644); werr != nil {
 				glog.Warningf("Failed to write e2e.txt file (%v)", werr)
 			}
 		}
+		if err != nil {
+			errs = append(errs, err)
+		}
 
 	}
-	return err
+	return errs
 }
