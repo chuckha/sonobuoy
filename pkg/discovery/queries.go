@@ -169,14 +169,14 @@ func queryNonNsResource(resourceKind string, kubeClient kubernetes.Interface) (r
 
 // QueryNSResources will query namespace-specific resources in the cluster,
 // writing them out to <resultsdir>/resources/ns/<ns>/*.json
-func QueryNSResources(kubeClient kubernetes.Interface, ns string, dc *Config) error {
-	var err error
+func QueryNSResources(kubeClient kubernetes.Interface, ns string, dc *Config) []error {
+	var errs []error
 	glog.Infof("Running ns query (%v)", ns)
 
 	outdir := path.Join(dc.OutputDir(), NSResourceLocation, ns)
-	err = os.MkdirAll(outdir, 0755)
-	if err != nil {
-		return err
+	if err := os.MkdirAll(outdir, 0755); err != nil {
+		errs = append(errs, err)
+		return errs
 	}
 
 	for resourceKind, resourceScope := range dc.ResourcesToQuery() {
@@ -184,28 +184,29 @@ func QueryNSResources(kubeClient kubernetes.Interface, ns string, dc *Config) er
 		// that aren't "ns"
 		if resourceScope == "ns" {
 			lister := func() (runtime.Object, error) { return queryNsResource(ns, resourceKind, kubeClient) }
-			err = objListQuery(outdir+"/", resourceKind+".json", lister)
-			if err != nil {
-				return fmt.Errorf("Error querying %v: %v", resourceKind, err)
+			if err := objListQuery(outdir+"/", resourceKind+".json", lister); err != nil {
+				glog.Warningf("Failed query on resource: %v, ns: %v, error:%v", resourceKind, ns, err)
+				errs = append(errs, err)
 			}
 		}
 	}
 
-	return err
+	return errs
 }
 
 // QueryNonNSResources queries non-namespace resources in the cluster, writing
 // them out to <resultsdir>/resources/non-ns/*.json
-func QueryNonNSResources(kubeClient kubernetes.Interface, dc *Config) error {
-	var err error
+func QueryNonNSResources(kubeClient kubernetes.Interface, dc *Config) []error {
+	var errs []error
 	glog.Infof("Running non-ns query")
 
 	resources := dc.ResourcesToQuery()
 	resourcesOutdir := path.Join(dc.OutputDir(), NonNSResourceLocation)
 
 	if len(resources) > 0 {
-		if err = os.MkdirAll(resourcesOutdir, 0755); err != nil {
-			return err
+		if err := os.MkdirAll(resourcesOutdir, 0755); err != nil {
+			errs = append(errs, err)
+			return errs
 		}
 	}
 
@@ -214,9 +215,9 @@ func QueryNonNSResources(kubeClient kubernetes.Interface, dc *Config) error {
 		// that aren't "non-ns"
 		if resourceScope == "non-ns" {
 			lister := func() (runtime.Object, error) { return queryNonNsResource(resourceKind, kubeClient) }
-			err = objListQuery(resourcesOutdir, resourceKind+".json", lister)
-			if err != nil {
-				return fmt.Errorf("Error querying %v: %v", resourceKind, err)
+			if err := objListQuery(resourcesOutdir, resourceKind+".json", lister); err != nil {
+				glog.Warningf("Failed query on resource: %v, error:%v", resourceKind, err)
+				errs = append(errs, err)
 			}
 		}
 	}
@@ -225,23 +226,23 @@ func QueryNonNSResources(kubeClient kubernetes.Interface, dc *Config) error {
 	// cluster, but we also use that option to guide whether we get node data such
 	// as configz and healthz endpoints.
 	if dc.Nodes {
-		if err = gatherNodeData(kubeClient, dc); err != nil {
-			return err
+		if err := gatherNodeData(kubeClient, dc); err != nil {
+			errs = append(errs, err)
 		}
 	}
 
 	if dc.HostFacts {
-		if err = gatherHostFacts(kubeClient, dc); err != nil {
-			return err
+		if err := gatherHostFacts(kubeClient, dc); err != nil {
+			errs = append(errs, err)
 		}
 	}
 
 	if dc.ServerVersion {
 		objqry := func() (interface{}, error) { return kubeClient.Discovery().ServerVersion() }
-		if err = untypedQuery(dc.OutputDir()+"/serverversion", "serverversion.json", objqry); err != nil {
-			return err
+		if err := untypedQuery(dc.OutputDir()+"/serverversion", "serverversion.json", objqry); err != nil {
+			errs = append(errs, err)
 		}
 	}
 
-	return nil
+	return errs
 }
