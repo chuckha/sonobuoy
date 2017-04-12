@@ -91,7 +91,7 @@ type Config struct {
 	ClusterRoleBindings        bool `json:"clusterrolebindings" resource:"non-ns"`
 	ClusterRoles               bool `json:"clusterroles" resource:"non-ns"`
 	ComponentStatuses          bool `json:"componentstatuses" resource:"non-ns"`
-	Nodes                      bool `json:"nodes" resource:"non-ns-special"`
+	Nodes                      bool `json:"nodes" resource:"non-ns"`
 	PersistentVolumes          bool `json:"persistentvolumes" resource:"non-ns"`
 	PodSecurityPolicies        bool `json:"podsecuritypolicies" resource:"non-ns"`
 	StorageClasses             bool `json:"storageclasses" resource:"non-ns"`
