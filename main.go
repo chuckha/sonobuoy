@@ -18,8 +18,6 @@ package main
 
 import (
 	"os"
-	"os/signal"
-	"syscall"
 
 	"github.com/golang/glog"
 	"github.com/heptio/sonobuoy/pkg/discovery"
@@ -28,28 +26,9 @@ import (
 // TODO figure out why -ldflags are not passed down on subsequent libraries
 var version string
 
-// setup a signal hander to gracefully exit
-func sigHandler() <-chan struct{} {
-	stop := make(chan struct{})
-	go func() {
-		c := make(chan os.Signal, 1)
-		signal.Notify(c,
-			syscall.SIGINT,  // Ctrl+C
-			syscall.SIGTERM, // Termination Request
-			syscall.SIGSEGV, // FullDerp
-			syscall.SIGABRT, // Abnormal termination
-			syscall.SIGILL,  // illegal instruction
-			syscall.SIGFPE)  // floating point - this is why we can't have nice things
-		sig := <-c
-		glog.Warningf("Signal (%v) Detected, Shutting Down", sig)
-		close(stop)
-	}()
-	return stop
-}
-
 // main entry point of the program
 func main() {
-	if errlist := discovery.Run(sigHandler(), version); errlist != nil {
+	if errlist := discovery.Run(version); errlist != nil {
 		for _, err := range errlist {
 			glog.Errorf("%v", err)
 		}

@@ -20,17 +20,13 @@ import (
 	"encoding/json"
 	"io/ioutil"
 	"os"
-	"sync"
 
 	"github.com/viniciuschiele/tarx"
 )
 
 // Run is the main entrypoint for discovery
-func Run(stopCh <-chan struct{}, version string) []error {
-	var wg sync.WaitGroup
-	var m sync.Mutex
+func Run(version string) []error {
 	var errlst []error
-	done := make(chan struct{})
 
 	// 0. Load the config
 	kubeClient, dc := LoadConfig()
@@ -53,47 +49,27 @@ func Run(stopCh <-chan struct{}, version string) []error {
 		}
 	}
 
-	// TODO: Have consistency on error reporting.
-	// Gather as many errors as possible get as far as we can, but only dump on success.
-	// Errors should not be in-band.
-
-	// 4. Launch queries concurrently
-	wg.Add(len(nslist) + 2)
-	spawn := func(err []error) {
-		defer wg.Done()
-		defer m.Unlock()
-		m.Lock()
+	rollup := func(err []error) {
 		if err != nil {
 			errlst = append(errlst, err...)
 		}
 	}
-	waitcomplete := func() {
-		wg.Wait()
-		close(done)
-	}
 
-	// TODO: Determine the level of parallelism we consider acceptable.
-	go spawn(QueryNonNSResources(kubeClient, dc))
+	// 4. Run the queries
+	rollup(QueryNonNSResources(kubeClient, dc))
 	for _, ns := range nslist {
-		go spawn(QueryNSResources(kubeClient, ns, dc))
+		rollup(QueryNSResources(kubeClient, ns, dc))
 	}
-	go spawn(rune2e(dc))
-	go waitcomplete()
+	rollup(rune2e(dc))
 
-	// 5. Block until completion or kill signal
-	select {
-	case <-stopCh:
-		// signal raised just exit
-	case <-done:
-		//7. tarball up results
-		tb := dc.ResultsDir + "/sonobuoy_" + dc.UUID + ".tar.gz"
-		err = tarx.Compress(tb, outpath, &tarx.CompressOptions{Compression: tarx.Gzip})
-		if err == nil {
-			err = os.RemoveAll(outpath)
-		}
-		if err != nil {
-			errlst = append(errlst, err)
-		}
+	//5. tarball up results
+	tb := dc.ResultsDir + "/sonobuoy_" + dc.UUID + ".tar.gz"
+	err = tarx.Compress(tb, outpath, &tarx.CompressOptions{Compression: tarx.Gzip})
+	if err == nil {
+		err = os.RemoveAll(outpath)
+	}
+	if err != nil {
+		errlst = append(errlst, err)
 	}
 
 	return errlst
