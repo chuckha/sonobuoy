@@ -14,13 +14,19 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package main
+package dispatch
 
-import (
-	"github.com/heptio/sonobuoy/pkg/cmd"
-)
+// A Dispatcher is something that can declare resources in kubernetes and clean
+// them up, for instance to run sonobuoy agents
+type Dispatcher interface {
+	Dispatch() error
+	Cleanup() error
+	SessionID() string
+}
 
-// main entry point of the program
-func main() {
-	cmd.RootCmd.Execute()
+// A Waiter is something that can dispatch "ephemeral" kubernetes
+// resources that can complete in some way like Jobs, etc.
+type Waiter interface {
+	DispatchAndWait() error
+	Wait() error
 }

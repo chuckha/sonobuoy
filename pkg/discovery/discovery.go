@@ -21,6 +21,9 @@ import (
 	"io/ioutil"
 	"os"
 
+	"github.com/golang/glog"
+	"github.com/heptio/sonobuoy/pkg/agent"
+	"github.com/heptio/sonobuoy/pkg/dispatch"
 	"github.com/viniciuschiele/tarx"
 )
 
@@ -55,14 +58,46 @@ func Run(version string) []error {
 		}
 	}
 
-	// 4. Run the queries
+	// 4. Start running the host query aggregator (it could take a while)
+	hostFactsResult := make(chan error, 1)
+	if dc.HostFacts {
+		go func() {
+			agentCfg := &agent.Config{
+				Ansible:      true,
+				ChrootDir:    "/node",
+				PhoneHomeURL: "http://" + dc.AggregationAdvertiseAddress + "/api/v1/results/by-node",
+			}
+
+			agentDispatcher := dispatch.NewAgentDispatcher(agentCfg, kubeClient)
+			defer agentDispatcher.Cleanup(0)
+
+			if err = agentDispatcher.Dispatch(); err != nil {
+				glog.Errorf("Error dispatching agent DaemonSet: %v\n", err)
+				errlst = append(errlst, err)
+				hostFactsResult <- nil
+				return
+			}
+
+			hostFactsResult <- gatherHostFacts(kubeClient, dc)
+		}()
+	} else {
+		// Put a nil result in the channel so reading it later won't block
+		hostFactsResult <- nil
+	}
+
+	// 5. Run the queries
 	rollup(QueryNonNSResources(kubeClient, dc))
 	for _, ns := range nslist {
 		rollup(QueryNSResources(kubeClient, ns, dc))
 	}
 	rollup(rune2e(dc))
 
-	//5. tarball up results
+	// 6. Wait for the host aggregator to finish
+	if r := <-hostFactsResult; r != nil {
+		errlst = append(errlst, r)
+	}
+
+	// 7. tarball up results
 	tb := dc.ResultsDir + "/sonobuoy_" + dc.UUID + ".tar.gz"
 	err = tarx.Compress(tb, outpath, &tarx.CompressOptions{Compression: tarx.Gzip})
 	if err == nil {

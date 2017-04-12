@@ -14,13 +14,26 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package main
+package cmd
 
 import (
-	"github.com/heptio/sonobuoy/pkg/cmd"
+	"fmt"
+
+	"github.com/heptio/sonobuoy/pkg/buildinfo"
+	"github.com/spf13/cobra"
 )
 
-// main entry point of the program
-func main() {
-	cmd.RootCmd.Execute()
+func init() {
+	RootCmd.AddCommand(versionCmd)
+}
+
+var versionCmd = &cobra.Command{
+	Use:   "version",
+	Short: "Print sonobuoy version",
+	Run:   runVersion,
+}
+
+func runVersion(cmd *cobra.Command, args []string) {
+	fmt.Println(buildinfo.Version)
+	fmt.Println("Configured docker image:", buildinfo.DockerImage)
 }

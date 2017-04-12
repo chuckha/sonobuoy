@@ -26,6 +26,7 @@ data:
           "endpoints": true,
           "events": true,
           "horizontalpodautoscalers": true,
+          "hostfacts": true,
           "ingresses": true,
           "jobs": true,
           "limitranges": true,

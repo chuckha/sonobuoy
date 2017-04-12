@@ -26,7 +26,7 @@ BUILD_IMAGE ?= golang:1.7
 # BUILD_IMAGE ?= golang:1.7-alpine3.5
 DOCKER ?= docker
 DIR := ${CURDIR}
-BUILD = go build -v -ldflags "-X main.version=$(VERSION)" && go test -i -c -o $(TESTTARGET) $(TESTSRCS)
+BUILD = go build -v -ldflags "-X github.com/heptio/sonobuoy/pkg/buildinfo.Version=$(VERSION) -X github.com/heptio/sonobuoy/pkg/buildinfo.DockerImage=$(REGISTRY)/$(TARGET)" && go test -i -c -o $(TESTTARGET) $(TESTSRCS)
 TEST = go test $(GOTARGET)/pkg/discovery
 
 local: 

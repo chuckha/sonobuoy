@@ -14,13 +14,13 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package main
+// Package buildinfo holds build-time information like the sonobuoy version.
+// This is a separate package so that other packages can import it without
+// worrying about introducing circular dependencies.
+package buildinfo
 
-import (
-	"github.com/heptio/sonobuoy/pkg/cmd"
-)
+// Version is the current version of Sonobuoy, set by the go linker's -X flag at build time
+var Version string
 
-// main entry point of the program
-func main() {
-	cmd.RootCmd.Execute()
-}
+// DockerImage is the full path to the docker image for this build, example gcr.io/heptio-images/sonobuoy
+var DockerImage string

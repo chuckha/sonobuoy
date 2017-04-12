@@ -17,25 +17,28 @@ limitations under the License.
 package discovery
 
 import (
-	"fmt"
-	"os"
 	"path"
+	"strconv"
+	"time"
 
 	"github.com/golang/glog"
-	"github.com/heptio/sonobuoy/pkg/ansible"
+	"github.com/heptio/sonobuoy/pkg/aggregator"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/pkg/api/v1"
 )
 
-func ansibleConfig(client kubernetes.Interface, dc *Config) (*ansible.Config, error) {
+func gatherHostFacts(client kubernetes.Interface, dc *Config) error {
+	// TODO: there are other places that iterate through the CoreV1.Nodes API
+	// call, we should only do this in one place and cache it.
 	nodelist, err := client.CoreV1().Nodes().List(metav1.ListOptions{})
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	hosts := make(map[string]string, len(nodelist.Items))
-	for _, node := range nodelist.Items {
+	nodeNames := make([]string, len(nodelist.Items))
+	for i, node := range nodelist.Items {
 		addrs := node.Status.Addresses
 		var addr string
 
@@ -57,66 +60,38 @@ func ansibleConfig(client kubernetes.Interface, dc *Config) (*ansible.Config, er
 			addr = addrs[0].Address
 		}
 
+		nodeNames[i] = node.Name
 		hosts[node.Name] = addr
 	}
 
-	outpath := path.Join(dc.OutputDir(), ".ansible")
-	if err = os.MkdirAll(outpath, 0755); err != nil {
-		return nil, err
+	aggr := &aggregator.NodeAggregator{
+		BindAddr:    dc.AggregationBindAddress + ":" + strconv.Itoa(dc.AggregationBindPort),
+		ExpectNodes: nodeNames,
+		OutputDir:   path.Join(dc.OutputDir(), "hosts"),
 	}
 
-	newcfg := ansible.Config{
-		OutputDir:  outpath,
-		Hosts:      hosts,
-		RemoteUser: dc.SSHRemoteUser,
-	}
-	return &newcfg, err
-}
+	// Ensure we only wait for results for a certain time
+	timeout := make(chan bool, 1)
+	go func() {
+		time.Sleep(time.Duration(dc.AggregationTimeoutSeconds) * time.Second)
+		timeout <- true
+	}()
 
-func moveAnsibleResults(acfg *ansible.Config, dc *Config) error {
-	// Where ansible dropped the files for all hosts (eg. results/hosts/.ansible-results)
-	sourcedir := path.Join(acfg.OutputDir, ansible.ResultsLocation)
-	var err error
+	stop := make(chan bool)
+	ready := make(chan bool)
+	result := make(chan error, 1)
+	go func() {
+		result <- aggr.GatherAndAwaitResults(stop, ready)
+	}()
+	<-ready
 
-	for nodeName, addr := range acfg.Hosts {
-		// eg. results/hosts/host1.local/
-		hostdir := path.Join(dc.OutputDir(), HostsLocation, nodeName)
-		dest := path.Join(hostdir, "ansible.json")
-		if err = os.MkdirAll(hostdir, 0755); err != nil {
-			return err
-		}
-
-		// Ansible names the results files after their address, not the node's
-		// logical name. (eg. results/hosts/)
-		ansibleResult := path.Join(sourcedir, addr)
-		err = os.Rename(ansibleResult, dest)
-		if err != nil {
-			return err
-		}
+	select {
+	case err = <-result:
+		break
+	case <-timeout:
+		glog.Errorf("Timed out waiting for results, shutting down HTTP server\n")
+		stop <- true
 	}
 
-	// There should really be no other contents in the ansible results directory,
-	// we should be able to remove it safely.
-	if err = os.Remove(sourcedir); err != nil {
-		return fmt.Errorf("could not remove temporary ansible results directory: %v", err)
-	}
-
-	return nil
-}
-
-func gatherHostFacts(client kubernetes.Interface, dc *Config) error {
-	acfg, err := ansibleConfig(client, dc)
-	if err != nil {
-		return err
-	}
-
-	if err = ansible.GatherHostData(acfg); err != nil {
-		return err
-	}
-
-	if err = moveAnsibleResults(acfg, dc); err != nil {
-		return err
-	}
-
-	return nil
+	return err
 }
