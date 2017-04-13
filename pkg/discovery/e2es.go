@@ -44,14 +44,14 @@ func rune2e(dc *Config) []error {
 		}
 
 		// 2. Setup the e2e test execution
-		cmd := exec.Command("./battery.test", "--ginkgo.focus=\""+dc.TestFocusRegex+"\"", "--ginkgo.skip=\""+dc.TestSkipRegex+"\"", "--provider=\""+dc.Provider+"\"", "--report-dir="+resultsPath, "--ginkgo.noColor=true")
+		cmd := exec.Command("./battery.test", "--ginkgo.skip="+dc.TestSkipRegex, "--ginkgo.focus="+dc.TestFocusRegex, "--provider="+dc.Provider, "--report-dir="+resultsPath, "--ginkgo.noColor=true")
 		cmd.Env = os.Environ()
 
 		// TODO: OK this is a mess in the framework tooling.
 		if len(dc.kubeconfig) > 0 {
 			cmd.Env = append(cmd.Env, "KUBECONFIG="+dc.kubeconfig)
 		}
-		glog.Infof("Executing e2es: [%v %v]", cmd.Path, cmd.Args)
+		glog.Infof("Executing e2es: [%v]", cmd.Args)
 
 		// 3. blocking run
 		e2eout, err := cmd.CombinedOutput()
