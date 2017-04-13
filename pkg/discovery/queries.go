@@ -26,6 +26,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/conversion"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
 )
@@ -86,56 +87,57 @@ func untypedListQuery(outpath string, file string, f UntypedListQuery) error {
 	return err
 }
 
-func queryNsResource(ns string, resourceKind string, kubeClient kubernetes.Interface) (runtime.Object, error) {
+func queryNsResource(ns string, resourceKind string, opts metav1.ListOptions, kubeClient kubernetes.Interface) (runtime.Object, error) {
+
 	switch resourceKind {
 	case "configmaps":
-		return kubeClient.CoreV1().ConfigMaps(ns).List(metav1.ListOptions{})
+		return kubeClient.CoreV1().ConfigMaps(ns).List(opts)
 	case "cronjobs":
-		return kubeClient.BatchV2alpha1().CronJobs(ns).List(metav1.ListOptions{})
+		return kubeClient.BatchV2alpha1().CronJobs(ns).List(opts)
 	case "daemonsets":
-		return kubeClient.Extensions().DaemonSets(ns).List(metav1.ListOptions{})
+		return kubeClient.Extensions().DaemonSets(ns).List(opts)
 	case "deployments":
-		return kubeClient.Apps().Deployments(ns).List(metav1.ListOptions{})
+		return kubeClient.Apps().Deployments(ns).List(opts)
 	case "endpoints":
-		return kubeClient.CoreV1().Endpoints(ns).List(metav1.ListOptions{})
+		return kubeClient.CoreV1().Endpoints(ns).List(opts)
 	case "events":
-		return kubeClient.CoreV1().Events(ns).List(metav1.ListOptions{})
+		return kubeClient.CoreV1().Events(ns).List(opts)
 	case "horizontalpodautoscalers":
-		return kubeClient.Autoscaling().HorizontalPodAutoscalers(ns).List(metav1.ListOptions{})
+		return kubeClient.Autoscaling().HorizontalPodAutoscalers(ns).List(opts)
 	case "ingresses":
-		return kubeClient.Extensions().Ingresses(ns).List(metav1.ListOptions{})
+		return kubeClient.Extensions().Ingresses(ns).List(opts)
 	case "jobs":
-		return kubeClient.Batch().Jobs(ns).List(metav1.ListOptions{})
+		return kubeClient.Batch().Jobs(ns).List(opts)
 	case "limitranges":
-		return kubeClient.CoreV1().LimitRanges(ns).List(metav1.ListOptions{})
+		return kubeClient.CoreV1().LimitRanges(ns).List(opts)
 	case "persistentvolumeclaims":
-		return kubeClient.CoreV1().PersistentVolumeClaims(ns).List(metav1.ListOptions{})
+		return kubeClient.CoreV1().PersistentVolumeClaims(ns).List(opts)
 	case "pods":
-		return kubeClient.CoreV1().Pods(ns).List(metav1.ListOptions{})
+		return kubeClient.CoreV1().Pods(ns).List(opts)
 	case "poddisruptionbudgets":
-		return kubeClient.Policy().PodDisruptionBudgets(ns).List(metav1.ListOptions{})
+		return kubeClient.Policy().PodDisruptionBudgets(ns).List(opts)
 	case "podpresets":
-		return kubeClient.Settings().PodPresets(ns).List(metav1.ListOptions{})
+		return kubeClient.Settings().PodPresets(ns).List(opts)
 	case "podtemplates":
-		return kubeClient.CoreV1().PodTemplates(ns).List(metav1.ListOptions{})
+		return kubeClient.CoreV1().PodTemplates(ns).List(opts)
 	case "replicasets":
-		return kubeClient.Extensions().ReplicaSets(ns).List(metav1.ListOptions{})
+		return kubeClient.Extensions().ReplicaSets(ns).List(opts)
 	case "replicationcontrollers":
-		return kubeClient.CoreV1().ReplicationControllers(ns).List(metav1.ListOptions{})
+		return kubeClient.CoreV1().ReplicationControllers(ns).List(opts)
 	case "resourcequotas":
-		return kubeClient.CoreV1().ResourceQuotas(ns).List(metav1.ListOptions{})
+		return kubeClient.CoreV1().ResourceQuotas(ns).List(opts)
 	case "rolebindings":
-		return kubeClient.Rbac().RoleBindings(ns).List(metav1.ListOptions{})
+		return kubeClient.Rbac().RoleBindings(ns).List(opts)
 	case "roles":
-		return kubeClient.Rbac().Roles(ns).List(metav1.ListOptions{})
+		return kubeClient.Rbac().Roles(ns).List(opts)
 	case "secrets":
-		return kubeClient.CoreV1().Secrets(ns).List(metav1.ListOptions{})
+		return kubeClient.CoreV1().Secrets(ns).List(opts)
 	case "serviceaccounts":
-		return kubeClient.CoreV1().ServiceAccounts(ns).List(metav1.ListOptions{})
+		return kubeClient.CoreV1().ServiceAccounts(ns).List(opts)
 	case "services":
-		return kubeClient.CoreV1().Services(ns).List(metav1.ListOptions{})
+		return kubeClient.CoreV1().Services(ns).List(opts)
 	case "statefulsets":
-		return kubeClient.Apps().StatefulSets(ns).List(metav1.ListOptions{})
+		return kubeClient.Apps().StatefulSets(ns).List(opts)
 	default:
 		return nil, fmt.Errorf("don't know how to handle namespaced resource %v", resourceKind)
 	}
@@ -179,11 +181,20 @@ func QueryNSResources(kubeClient kubernetes.Interface, ns string, dc *Config) []
 		return errs
 	}
 
+	opts := metav1.ListOptions{}
+	if len(dc.LabelSelector) > 0 {
+		if _, err := labels.Parse(dc.LabelSelector); err != nil {
+			glog.Warningf("Labelselector %v failed to parse with error %v", dc.LabelSelector, err)
+		} else {
+			opts.LabelSelector = dc.LabelSelector
+		}
+	}
+
 	for resourceKind, resourceScope := range dc.ResourcesToQuery() {
 		// We use annotations to tag resources as being namespaced vs not, skip any
 		// that aren't "ns"
 		if resourceScope == "ns" {
-			lister := func() (runtime.Object, error) { return queryNsResource(ns, resourceKind, kubeClient) }
+			lister := func() (runtime.Object, error) { return queryNsResource(ns, resourceKind, opts, kubeClient) }
 			if err := objListQuery(outdir+"/", resourceKind+".json", lister); err != nil {
 				glog.Warningf("Failed query on resource: %v, ns: %v, error:%v", resourceKind, ns, err)
 				errs = append(errs, err)

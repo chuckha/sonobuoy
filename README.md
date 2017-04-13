@@ -23,7 +23,6 @@ This gap in health reporting, is the primary role that sonobuoy aims to fill.  I
 * Health analysis of a newly installed cluster
 * ... 
 
-
 ## Non-goals:
 Sonobuoy’s primary function is data collection only, and therefore, any analysis of the results is specifically a non-goal of sonobuoy.   
 
