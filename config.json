@@ -3,6 +3,7 @@
     "sonobuoy": {
         "clusterrolebindings": true,
         "clusterroles": true,
+	"collectpodlogs": true,
         "componentstatuses": true,
         "configmaps": true,
         "daemonsets": true,
@@ -33,7 +34,7 @@
         "services": true,
         "statefulsets": true,
         "storageclasses": true,
-        "testfocusregex": "Conformance",
+        "testfocusregex": "Pods should be submitted and removed",
         "testskipregex": "Alpha|Disruptive|Feature|Flaky|Serial",
         "thirdpartyresources": true
     }

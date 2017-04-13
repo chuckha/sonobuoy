@@ -60,7 +60,8 @@ type Config struct {
 	Namespaces string `json:"namespaces"`
 	// LabelSelector allows a selector string to selectively prune namespaced results
 	// this is for use
-	LabelSelector string `json:"labelselector"`
+	LabelSelector  string `json:"labelselector"`
+	CollectPodLogs bool   `json:"collectpodlogs"`
 
 	// Namespace scoped
 	ConfigMaps               bool `json:"configmaps" resource:"ns"`
@@ -131,6 +132,7 @@ func SetConfigDefaults(dc *Config) {
 	dc.CertificateSigningRequests = true
 	dc.ClusterRoleBindings = true
 	dc.ClusterRoles = true
+	dc.CollectPodLogs = false
 	dc.ComponentStatuses = true
 	dc.ConfigMaps = true
 	dc.CronJobs = false

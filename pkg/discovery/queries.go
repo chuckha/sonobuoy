@@ -202,6 +202,12 @@ func QueryNSResources(kubeClient kubernetes.Interface, ns string, dc *Config) []
 		}
 	}
 
+	if dc.CollectPodLogs {
+		if err := gatherPodLogs(kubeClient, ns, opts, dc); err != nil {
+			errs = append(errs, err...)
+		}
+	}
+
 	return errs
 }
 
