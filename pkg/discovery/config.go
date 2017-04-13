@@ -58,6 +58,9 @@ type Config struct {
 
 	// regex to define namespace collection default=*
 	Namespaces string `json:"namespaces"`
+	// LabelSelector allows a selector string to selectively prune namespaced results
+	// this is for use
+	LabelSelector string `json:"labelselector"`
 
 	// Namespace scoped
 	ConfigMaps               bool `json:"configmaps" resource:"ns"`
@@ -105,9 +108,8 @@ type Config struct {
 	kubeconfig string
 
 	// TODOs:
-	// 1. Master component /configz (Still unsupported)
-	// 2. Add support for label selection? (Whitelist, Blacklist)
-	// 3. Other new api-types.
+	// - Master component /configz (Still unsupported atm)
+	// - Other api-types?
 }
 
 // SonoCfg is used to export a config
