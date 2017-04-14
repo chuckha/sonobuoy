@@ -13,7 +13,7 @@
 # limitations under the License.
 
 TARGET = sonobuoy
-TESTTARGET = battery.test
+TESTTARGET = e2e.test
 GOTARGET = github.com/heptio/$(TARGET)
 TESTSRCS = $(GOTARGET)/pkg/battery
 BUILDMNT = /go/src/$(GOTARGET)

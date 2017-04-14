@@ -28,7 +28,7 @@ RUN apt-get update && apt-get -y --no-install-recommends install \
     && rm -rf /var/cache/apt/* \
     && rm -rf /var/lib/apt/lists/*
 ADD sonobuoy /sonobuoy 
-ADD battery.test /battery.test
+ADD e2e.test /e2e.test
 #USER nobody:nobody
 
 CMD ["/bin/sh", "-c", "/sonobuoy -v 3 -logtostderr"]

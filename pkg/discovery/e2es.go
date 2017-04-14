@@ -44,7 +44,7 @@ func rune2e(dc *Config) []error {
 		}
 
 		// 2. Setup the e2e test execution
-		cmd := exec.Command("./battery.test", "--ginkgo.skip="+dc.TestSkipRegex, "--ginkgo.focus="+dc.TestFocusRegex, "--provider="+dc.Provider, "--report-dir="+resultsPath, "--ginkgo.noColor=true")
+		cmd := exec.Command("./e2e.test", "--ginkgo.skip="+dc.TestSkipRegex, "--ginkgo.focus="+dc.TestFocusRegex, "--provider="+dc.Provider, "--report-dir="+resultsPath, "--ginkgo.noColor=true")
 		cmd.Env = os.Environ()
 
 		// TODO: OK this is a mess in the framework tooling.
