@@ -31,10 +31,6 @@ import (
 	"k8s.io/client-go/kubernetes"
 )
 
-// TODO:
-// 1. Pass back errors through channel
-// 2. map of name<>function. (debatable if we want to do this)
-
 // ObjQuery is a query function that returns a kubernetes object
 type ObjQuery func() (runtime.Object, error)
 
@@ -53,6 +49,7 @@ const (
 	HostsLocation = "hosts"
 )
 
+// objListQuery performs a list query and serialize the results
 func objListQuery(outpath string, file string, f ObjQuery) error {
 	listObj, err := f()
 	if err != nil {
@@ -71,6 +68,7 @@ func objListQuery(outpath string, file string, f ObjQuery) error {
 	return err
 }
 
+// untypedQuery performs a untyped query and serialize the results
 func untypedQuery(outpath string, file string, f UntypedQuery) error {
 	Obj, err := f()
 	if err == nil && Obj != nil {
@@ -79,6 +77,7 @@ func untypedQuery(outpath string, file string, f UntypedQuery) error {
 	return err
 }
 
+// untypedListQuery performs a untyped list query and serialize the results
 func untypedListQuery(outpath string, file string, f UntypedListQuery) error {
 	listObj, err := f()
 	if err == nil && listObj != nil {
@@ -87,8 +86,8 @@ func untypedListQuery(outpath string, file string, f UntypedListQuery) error {
 	return err
 }
 
+// queryNsResource performs the appropriate namespace-scoped query according to its input args
 func queryNsResource(ns string, resourceKind string, opts metav1.ListOptions, kubeClient kubernetes.Interface) (runtime.Object, error) {
-
 	switch resourceKind {
 	case "configmaps":
 		return kubeClient.CoreV1().ConfigMaps(ns).List(opts)
@@ -141,9 +140,9 @@ func queryNsResource(ns string, resourceKind string, opts metav1.ListOptions, ku
 	default:
 		return nil, fmt.Errorf("don't know how to handle namespaced resource %v", resourceKind)
 	}
-
 }
 
+// queryNonNsResource performs the appropriate non-namespace-scoped query according to its input args
 func queryNonNsResource(resourceKind string, kubeClient kubernetes.Interface) (runtime.Object, error) {
 	switch resourceKind {
 	case "certificatesigningrequests":

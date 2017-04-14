@@ -29,7 +29,6 @@ import (
 )
 
 // FilterNamespaces filter the list of namespaces according to the filter string
-// TODO: What's the easiest consumable for users to filter on, regex or...?
 func FilterNamespaces(kubeClient kubernetes.Interface, filter string) []string {
 	var validns []string
 	re := regexp.MustCompile(filter)
@@ -42,7 +41,6 @@ func FilterNamespaces(kubeClient kubernetes.Interface, filter string) []string {
 			}
 		}
 	} else {
-		// TODO: should we bail or is this too aggressive?
 		panic(err.Error())
 	}
 	return validns

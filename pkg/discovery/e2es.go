@@ -47,13 +47,13 @@ func rune2e(dc *Config) []error {
 		cmd := exec.Command("./e2e.test", "--ginkgo.skip="+dc.TestSkipRegex, "--ginkgo.focus="+dc.TestFocusRegex, "--provider="+dc.Provider, "--report-dir="+resultsPath, "--ginkgo.noColor=true")
 		cmd.Env = os.Environ()
 
-		// TODO: OK this is a mess in the framework tooling.
+		// 3. Setup Kubeconfig if one is provided
 		if len(dc.kubeconfig) > 0 {
 			cmd.Env = append(cmd.Env, "KUBECONFIG="+dc.kubeconfig)
 		}
 		glog.Infof("Executing e2es: [%v]", cmd.Args)
 
-		// 3. blocking run
+		// 4. blocking run
 		e2eout, err := cmd.CombinedOutput()
 		if e2eout != nil {
 			if werr := ioutil.WriteFile(resultsPath+"/e2e.txt", e2eout, 0644); werr != nil {

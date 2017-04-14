@@ -23,7 +23,6 @@ import (
 	"github.com/heptio/sonobuoy/pkg/discovery"
 )
 
-// TODO figure out why -ldflags are not passed down on subsequent libraries
 var version string
 
 // main entry point of the program
