@@ -31,8 +31,11 @@ const (
 	PodsLocation = "pods"
 )
 
+// gatherPodLogs will loop through collecting pod logs and placing them into a directory tree
 func gatherPodLogs(kubeClient kubernetes.Interface, ns string, opts metav1.ListOptions, dc *Config) []error {
 	var errs []error
+
+	// 1 - Collect the list of pods
 	podlist, err := kubeClient.CoreV1().Pods(ns).List(opts)
 	if err != nil {
 		errs = append(errs, err)
@@ -40,6 +43,8 @@ func gatherPodLogs(kubeClient kubernetes.Interface, ns string, opts metav1.ListO
 	}
 
 	glog.Info("Collecting Pod Logs...")
+
+	// 2 - Foreach pod, dump its logs in a tree according to it's name
 	for _, pod := range podlist.Items {
 		body, err := kubeClient.CoreV1().Pods(ns).GetLogs(pod.Name, &v1.PodLogOptions{}).Do().Raw()
 		if err == nil {
