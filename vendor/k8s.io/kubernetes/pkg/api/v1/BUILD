@@ -31,6 +31,7 @@ go_library(
     tags = ["automanaged"],
     deps = [
         "//pkg/api:go_default_library",
+        "//pkg/api/helper:go_default_library",
         "//pkg/apis/extensions:go_default_library",
         "//pkg/util:go_default_library",
         "//pkg/util/parsers:go_default_library",
@@ -86,6 +87,7 @@ go_test(
     library = ":go_default_library",
     tags = ["automanaged"],
     deps = [
+        "//vendor:github.com/stretchr/testify/assert",
         "//vendor:k8s.io/apimachinery/pkg/api/equality",
         "//vendor:k8s.io/apimachinery/pkg/api/resource",
         "//vendor:k8s.io/apimachinery/pkg/apis/meta/v1",

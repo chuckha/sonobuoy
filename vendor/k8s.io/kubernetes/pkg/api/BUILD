@@ -11,21 +11,20 @@ load(
 go_library(
     name = "go_default_library",
     srcs = [
-        "defaults.go",
+        "annotation_key_constants.go",
         "doc.go",
         "field_constants.go",
-        "helpers.go",
         "json.go",
-        "ref.go",
+        "objectreference.go",
         "register.go",
-        "resource_helpers.go",
+        "resource.go",
+        "taint.go",
+        "toleration.go",
         "types.go",
         "zz_generated.deepcopy.go",
     ],
     tags = ["automanaged"],
     deps = [
-        "//vendor:github.com/davecgh/go-spew/spew",
-        "//vendor:k8s.io/apimachinery/pkg/api/meta",
         "//vendor:k8s.io/apimachinery/pkg/api/resource",
         "//vendor:k8s.io/apimachinery/pkg/apimachinery/announced",
         "//vendor:k8s.io/apimachinery/pkg/apimachinery/registered",
@@ -36,29 +35,16 @@ go_library(
         "//vendor:k8s.io/apimachinery/pkg/runtime",
         "//vendor:k8s.io/apimachinery/pkg/runtime/schema",
         "//vendor:k8s.io/apimachinery/pkg/runtime/serializer",
-        "//vendor:k8s.io/apimachinery/pkg/selection",
         "//vendor:k8s.io/apimachinery/pkg/types",
         "//vendor:k8s.io/apimachinery/pkg/util/intstr",
-        "//vendor:k8s.io/apimachinery/pkg/util/sets",
     ],
 )
 
 go_test(
     name = "go_default_test",
-    srcs = [
-        "helpers_test.go",
-        "ref_test.go",
-        "resource_helpers_test.go",
-    ],
+    srcs = ["taint_test.go"],
     library = ":go_default_library",
     tags = ["automanaged"],
-    deps = [
-        "//vendor:k8s.io/apimachinery/pkg/api/resource",
-        "//vendor:k8s.io/apimachinery/pkg/apis/meta/v1",
-        "//vendor:k8s.io/apimachinery/pkg/labels",
-        "//vendor:k8s.io/apimachinery/pkg/runtime",
-        "//vendor:k8s.io/apimachinery/pkg/runtime/schema",
-    ],
 )
 
 go_test(
@@ -119,9 +105,11 @@ filegroup(
         "//pkg/api/endpoints:all-srcs",
         "//pkg/api/errors:all-srcs",
         "//pkg/api/events:all-srcs",
+        "//pkg/api/helper:all-srcs",
         "//pkg/api/install:all-srcs",
         "//pkg/api/meta:all-srcs",
         "//pkg/api/pod:all-srcs",
+        "//pkg/api/ref:all-srcs",
         "//pkg/api/resource:all-srcs",
         "//pkg/api/service:all-srcs",
         "//pkg/api/testapi:all-srcs",

@@ -28,6 +28,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/sets"
 
 	"k8s.io/client-go/pkg/api"
+	"k8s.io/client-go/pkg/api/helper"
 )
 
 // IsOpaqueIntResourceName returns true if the resource name has the opaque
@@ -276,17 +277,17 @@ const (
 	AffinityAnnotationKey string = "scheduler.alpha.kubernetes.io/affinity"
 )
 
-// Tries to add a toleration to annotations list. Returns true if something was updated
-// false otherwise.
-func AddOrUpdateTolerationInPod(pod *Pod, toleration *Toleration) (bool, error) {
+// AddOrUpdateTolerationInPod tries to add a toleration to the pod's toleration list.
+// Returns true if something was updated, false otherwise.
+func AddOrUpdateTolerationInPod(pod *Pod, toleration *Toleration) bool {
 	podTolerations := pod.Spec.Tolerations
 
 	var newTolerations []Toleration
 	updated := false
 	for i := range podTolerations {
 		if toleration.MatchToleration(&podTolerations[i]) {
-			if api.Semantic.DeepEqual(toleration, podTolerations[i]) {
-				return false, nil
+			if helper.Semantic.DeepEqual(toleration, podTolerations[i]) {
+				return false
 			}
 			newTolerations = append(newTolerations, *toleration)
 			updated = true
@@ -301,7 +302,7 @@ func AddOrUpdateTolerationInPod(pod *Pod, toleration *Toleration) (bool, error) 
 	}
 
 	pod.Spec.Tolerations = newTolerations
-	return true, nil
+	return true
 }
 
 // MatchToleration checks if the toleration matches tolerationToMatch. Tolerations are unique by <key,effect,operator,value>,
@@ -527,7 +528,7 @@ func AddOrUpdateTaint(node *Node, taint *Taint) (*Node, bool, error) {
 	updated := false
 	for i := range nodeTaints {
 		if taint.MatchTaint(&nodeTaints[i]) {
-			if api.Semantic.DeepEqual(taint, nodeTaints[i]) {
+			if helper.Semantic.DeepEqual(taint, nodeTaints[i]) {
 				return newNode, false, nil
 			}
 			newTaints = append(newTaints, *taint)

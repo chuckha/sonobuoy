@@ -3,7 +3,7 @@
     "sonobuoy": {
         "clusterrolebindings": true,
         "clusterroles": true,
-	"collectpodlogs": true,
+        "collectpodlogs": true,
         "componentstatuses": true,
         "configmaps": true,
         "daemonsets": true,

@@ -265,7 +265,7 @@ func (dsc *DaemonSetsController) getPodDaemonSets(pod *v1.Pod) []*extensions.Dae
 		return nil
 	}
 	if len(sets) > 1 {
-		// ControllerRef will ensure we don't do anythign crazy, but more than one
+		// ControllerRef will ensure we don't do anything crazy, but more than one
 		// item in this list nevertheless constitutes user error.
 		utilruntime.HandleError(fmt.Errorf("user error! more than one daemon is selecting pods with labels: %+v", pod.Labels))
 	}
@@ -858,27 +858,21 @@ func (dsc *DaemonSetsController) nodeShouldRunDaemonPod(node *v1.Node, ds *exten
 	// Add infinite toleration for taint notReady:NoExecute here
 	// to survive taint-based eviction enforced by NodeController
 	// when node turns not ready.
-	_, err = v1.AddOrUpdateTolerationInPod(newPod, &v1.Toleration{
+	v1.AddOrUpdateTolerationInPod(newPod, &v1.Toleration{
 		Key:      metav1.TaintNodeNotReady,
 		Operator: v1.TolerationOpExists,
 		Effect:   v1.TaintEffectNoExecute,
 	})
-	if err != nil {
-		return false, false, false, err
-	}
 
 	// DaemonSet pods shouldn't be deleted by NodeController in case of node problems.
 	// Add infinite toleration for taint unreachable:NoExecute here
 	// to survive taint-based eviction enforced by NodeController
 	// when node turns unreachable.
-	_, err = v1.AddOrUpdateTolerationInPod(newPod, &v1.Toleration{
+	v1.AddOrUpdateTolerationInPod(newPod, &v1.Toleration{
 		Key:      metav1.TaintNodeUnreachable,
 		Operator: v1.TolerationOpExists,
 		Effect:   v1.TaintEffectNoExecute,
 	})
-	if err != nil {
-		return false, false, false, err
-	}
 
 	pods := []*v1.Pod{}
 
@@ -914,7 +908,7 @@ func (dsc *DaemonSetsController) nodeShouldRunDaemonPod(node *v1.Node, ds *exten
 		glog.V(4).Infof("DaemonSet Predicates failed on node %s for ds '%s/%s' for reason: %v", node.Name, ds.ObjectMeta.Namespace, ds.ObjectMeta.Name, r.GetReason())
 		switch reason := r.(type) {
 		case *predicates.InsufficientResourceError:
-			dsc.eventRecorder.Eventf(ds, v1.EventTypeNormal, FailedPlacementReason, "failed to place pod on %q: %s", node.ObjectMeta.Name, reason.Error())
+			dsc.eventRecorder.Eventf(ds, v1.EventTypeWarning, FailedPlacementReason, "failed to place pod on %q: %s", node.ObjectMeta.Name, reason.Error())
 			shouldSchedule = false
 		case *predicates.PredicateFailureError:
 			var emitEvent bool
@@ -955,7 +949,7 @@ func (dsc *DaemonSetsController) nodeShouldRunDaemonPod(node *v1.Node, ds *exten
 				emitEvent = true
 			}
 			if emitEvent {
-				dsc.eventRecorder.Eventf(ds, v1.EventTypeNormal, FailedPlacementReason, "failed to place pod on %q: %s", node.ObjectMeta.Name, reason.GetReason())
+				dsc.eventRecorder.Eventf(ds, v1.EventTypeWarning, FailedPlacementReason, "failed to place pod on %q: %s", node.ObjectMeta.Name, reason.GetReason())
 			}
 		}
 	}

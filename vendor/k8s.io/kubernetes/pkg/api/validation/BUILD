@@ -19,7 +19,7 @@ go_library(
     tags = ["automanaged"],
     deps = [
         "//pkg/api:go_default_library",
-        "//pkg/api/pod:go_default_library",
+        "//pkg/api/helper:go_default_library",
         "//pkg/api/service:go_default_library",
         "//pkg/api/util:go_default_library",
         "//pkg/api/v1:go_default_library",
@@ -68,6 +68,7 @@ go_test(
     tags = ["automanaged"],
     deps = [
         "//pkg/api:go_default_library",
+        "//pkg/api/helper:go_default_library",
         "//pkg/api/service:go_default_library",
         "//pkg/api/testapi:go_default_library",
         "//pkg/api/testing:go_default_library",
@@ -84,6 +85,7 @@ go_test(
         "//vendor:k8s.io/apimachinery/pkg/util/sets",
         "//vendor:k8s.io/apimachinery/pkg/util/validation/field",
         "//vendor:k8s.io/apimachinery/pkg/util/yaml",
+        "//vendor:k8s.io/apiserver/pkg/util/feature",
     ],
 )
 
