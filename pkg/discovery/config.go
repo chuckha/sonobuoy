@@ -17,11 +17,12 @@ limitations under the License.
 package discovery
 
 import (
-	"flag"
+	"fmt"
 	"path"
 	"reflect"
 	"strings"
 
+	"github.com/golang/glog"
 	"github.com/satori/go.uuid"
 	"github.com/spf13/viper"
 
@@ -108,6 +109,12 @@ type Config struct {
 	// Non-serialized used for internal passing.
 	kubeconfig string
 
+	// Aggregation config
+	AggregationBindAddress      string `json:"aggregationbindaddress"`
+	AggregationBindPort         int    `json:"aggregationbindport"`
+	AggregationAdvertiseAddress string `json:"aggregationadvertiseaddress"`
+	AggregationTimeoutSeconds   int    `json:"aggregationtimeoutseconds"`
+
 	// TODOs:
 	// - Master component /configz (Still unsupported atm)
 	// - Other api-types?
@@ -165,6 +172,9 @@ func SetConfigDefaults(dc *Config) {
 	dc.StorageClasses = true
 	dc.ThirdPartyResources = true
 	dc.HostFacts = false
+	dc.AggregationBindAddress = "0.0.0.0"
+	dc.AggregationBindPort = 8080
+	dc.AggregationTimeoutSeconds = 300 // 5 minutes
 }
 
 // OutputDir returns the directory under the ResultsDir containing the
@@ -219,7 +229,6 @@ func LoadConfig() (kubernetes.Interface, *Config) {
 	var dc Config
 
 	// 0 - load defaults
-	flag.Parse()
 	viper.SetConfigType("json")
 	viper.SetConfigName("config")
 	viper.AddConfigPath("/etc/" + DiscoveryConfigKey + "/")
@@ -260,5 +269,21 @@ func LoadConfig() (kubernetes.Interface, *Config) {
 	if err != nil {
 		panic(err.Error())
 	}
+
+	// 5 - figure out what address we will tell pods to phone home to for aggregation
+	if dc.HostFacts && dc.AggregationAdvertiseAddress == "" {
+		if ip, ok := os.LookupEnv("SONOBUOY_ADVERTISE_IP"); ok {
+			dc.AggregationAdvertiseAddress = fmt.Sprintf("%v:%d", ip, dc.AggregationBindPort)
+		} else {
+			hostname, err := os.Hostname()
+			if err != nil {
+				panic(fmt.Errorf("Could not determine hostname (use aggregationadvertiseaddress option to set this manually): %v", err))
+			}
+
+			glog.Warningf("Aggregation advertise address not specified in config, using %v\n", hostname)
+			dc.AggregationAdvertiseAddress = fmt.Sprintf("%v:%d", hostname, dc.AggregationBindPort)
+		}
+	}
+
 	return clientset, &dc
 }

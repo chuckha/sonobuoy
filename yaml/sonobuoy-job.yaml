@@ -36,8 +36,11 @@ spec:
             mountPath: /etc/sonobuoy
           - name: output-volume
             mountPath: /tmp/output
-          - name: ssh-config-volume
-            mountPath: /root/.ssh
+          env:
+            - name: SONOBUOY_ADVERTISE_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
 
       volumes: 
         - name: sonobuoy-config-volume
@@ -47,13 +50,6 @@ spec:
           # TODO: make this something persistent, this is nice for testing
           hostPath:
             path: /tmp/sonobuoy-output
-        - name: ssh-config-volume
-          secret:
-            secretName: sonobuoy-secrets
-            items:
-            - key: ssh-key
-              mode: 0600
-              path: id_rsa
 
 ---
 apiVersion: rbac.authorization.k8s.io/v1beta1
@@ -80,11 +76,7 @@ rules:
     resources:
     - "*"
     verbs:
-    - "get"
-    - "list"
-    - "watch"
-    - "proxy"
-    - "redirect"
+    - "*"
 ---
 apiVersion: v1
 kind: ServiceAccount

@@ -31,4 +31,4 @@ ADD sonobuoy /sonobuoy
 ADD e2e.test /e2e.test
 #USER nobody:nobody
 
-CMD ["/bin/sh", "-c", "/sonobuoy -v 3 -logtostderr"]
+CMD ["/bin/sh", "-c", "/sonobuoy -v 3 --logtostderr"]

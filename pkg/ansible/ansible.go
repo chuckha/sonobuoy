@@ -17,17 +17,12 @@ limitations under the License.
 package ansible
 
 import (
+	"bytes"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"os/exec"
-	"path"
-	"text/template"
-
-	"bytes"
 
 	"github.com/golang/glog"
-	"github.com/renstrom/dedent"
 )
 
 const (
@@ -40,126 +35,58 @@ const (
 // Config represents the configuration of ansible for reaching out to physical
 // hosts in the cluster.
 type Config struct {
-	Hosts      map[string]string `json:"hosts"`
-	RemoteUser string            `json:"remoteuser"`
-	OutputDir  string            `json:"outputdir"`
+	// Chroot is the directory contianing the host's filesystem
+	Chroot string
 }
 
-func writeAnsibleConfig(cfg *Config) error {
-	confdir := path.Join(cfg.OutputDir, ConfigLocation)
-
-	// Construct the config and hosts files
-	confcontents, err := ansibleConfFile(cfg)
-	if err != nil {
-		return err
-	}
-	hostcontents, err := ansibleHostFile(cfg)
-	if err != nil {
-		return err
-	}
-
-	// Write the contents out
-	if err = os.MkdirAll(confdir, 0755); err != nil {
-		return err
-	}
-	if err = ioutil.WriteFile(path.Join(confdir, "ansible.cfg"), confcontents, 0644); err != nil {
-		return err
-	}
-	if err = ioutil.WriteFile(path.Join(confdir, "hosts"), hostcontents, 0644); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func runAnsible(cfg *Config) error {
+// Run ansible locally in the given chroot
+func Run(chroot string) ([]byte, error) {
 	// Find the ansible command
 	ansiblePath, err := exec.LookPath("ansible")
-	resultsdir := path.Join(cfg.OutputDir, ResultsLocation)
 	if err != nil {
-		return fmt.Errorf("could not find ansible binary in $PATH: %v", err)
+		return nil, fmt.Errorf("could not find ansible binary in $PATH: %v", err)
 	}
 
-	// Create the temporary output directory if it doesn't exist
-	if err = os.MkdirAll(resultsdir, 0755); err != nil {
-		return err
-	}
-
-	// Ensure it's empty (in case it already exists)
-	if files, _ := ioutil.ReadDir(resultsdir); len(files) > 0 {
-		return fmt.Errorf("ansible output path %v already exists and is non-empty", resultsdir)
-	}
-
-	cmd := exec.Command(ansiblePath, "--ssh-common-args=-o BatchMode=yes", "all", "-m", "setup", "--tree", resultsdir)
-
-	// Write ansible config
-	if err = writeAnsibleConfig(cfg); err != nil {
-		return fmt.Errorf("could not write ansible config to disk: %v", err)
-	}
-
-	// Customize environment variables for running ansible
-	cmd.Env = os.Environ()
-	cmd.Env = append(cmd.Env, "ANSIBLE_CONFIG="+path.Join(cfg.OutputDir, ConfigLocation, "ansible.cfg"))
-	cmd.Env = append(cmd.Env, "ANSIBLE_INVENTORY="+path.Join(cfg.OutputDir, ConfigLocation, "hosts"))
-	cmd.Stderr = os.Stderr
+	var out bytes.Buffer
+	out.Grow(16384) // Reasonable guess for output length
+	cmd := exec.Command(
+		ansiblePath,
+		"all",
+		// The comma is intentional, adding a trailing comma after is what convinces ansible to do the right thing.
+		"--inventory-file="+chroot+",",
+		"--connection=chroot",
+		"--module-name=setup",
+		"--one-line",
+	)
+	cmd.Stdout = &out
+	cmd.Stderr = os.Stdout
 
 	// Start the command in the background
 	err = cmd.Start()
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	err = cmd.Wait()
 	if err != nil {
-		return fmt.Errorf("ansible returned an error: %v", err)
+		glog.Errorf("Error running ansible: %v\n", out.String())
+		return nil, fmt.Errorf("ansible returned an error: %v", err)
 	}
 
-	return nil
-}
-
-func ansibleConfFile(cfg *Config) ([]byte, error) {
-	tmplstr := dedent.Dedent(`
-		[defaults]
-		ask_pass = False
-		ask_sudo_pass = False
-		ask_vault_pass = False
-		become_ask_pass = False
-		host_key_checking = False
-		remote_user = {{.RemoteUser}}
-	`)
-
-	var result bytes.Buffer
-	tmpl := template.New("acfg")
-	template.Must(tmpl.Parse(tmplstr))
-
-	if err := tmpl.Execute(&result, cfg); err != nil {
-		return nil, fmt.Errorf("could not construct valid ansible template from config: %v", err)
-	}
-
-	glog.V(5).Infof("Ansible config: \n%v\n", result.String())
-	return result.Bytes(), nil
-}
-
-func ansibleHostFile(cfg *Config) ([]byte, error) {
-	var result bytes.Buffer
-	var err error
-
-	for _, addr := range cfg.Hosts {
-		if _, err = result.WriteString(addr + "\n"); err != nil {
-			return result.Bytes(), err
+	// This is kind of hackish, ansible returns output that looks like:
+	//
+	// /node | SUCCESS => {...}
+	//
+	// And we just want the json inside the {...}. So skip the first bit of the
+	// string before the first `{`.
+	outbytes := out.Bytes()
+	beginloc := 0
+	for beginloc < len(outbytes) {
+		if outbytes[beginloc] == '{' {
+			break
 		}
-	}
-	return result.Bytes(), nil
-}
-
-// GatherHostData call out to ansible to SSH to each node and gather host fact
-// information, writing them out to the specified output directory.
-func GatherHostData(cfg *Config) error {
-	glog.Infof("Gathering host data with ansible\n")
-	err := runAnsible(cfg)
-	if err != nil {
-		glog.Errorf("Error running ansible: %v\n", err)
+		beginloc++
 	}
 
-	return err
+	return outbytes[beginloc:len(outbytes)], err
 }

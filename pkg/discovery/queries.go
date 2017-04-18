@@ -247,12 +247,6 @@ func QueryNonNSResources(kubeClient kubernetes.Interface, dc *Config) []error {
 		}
 	}
 
-	if dc.HostFacts {
-		if err := gatherHostFacts(kubeClient, dc); err != nil {
-			errs = append(errs, err)
-		}
-	}
-
 	if dc.ServerVersion {
 		objqry := func() (interface{}, error) { return kubeClient.Discovery().ServerVersion() }
 		if err := untypedQuery(dc.OutputDir()+"/serverversion", "serverversion.json", objqry); err != nil {
