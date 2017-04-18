@@ -58,7 +58,7 @@ const (
 
 // Start starts this HTTP server, binding it to s.BindAddr and sending results
 // over the s.Results channel
-func (s *server) Start(stop chan bool, ready chan bool) error {
+func (s *server) Start(stop <-chan bool, ready chan<- bool) error {
 	mux := http.NewServeMux()
 	mux.Handle("/", http.NotFoundHandler())
 	mux.Handle(resultsByNode, http.StripPrefix(resultsByNode, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

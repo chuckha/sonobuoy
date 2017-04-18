@@ -78,19 +78,24 @@ func gatherHostFacts(client kubernetes.Interface, dc *Config) error {
 	}()
 
 	stop := make(chan bool)
-	ready := make(chan bool)
-	result := make(chan error, 1)
+	result := make(chan error)
+	ready := make(chan bool, 1)
+	done := make(chan bool, 1)
 	go func() {
-		result <- aggr.GatherAndAwaitResults(stop, ready)
+		result <- aggr.GatherAndAwaitResults(stop, ready, done)
 	}()
 	<-ready
 
 	select {
 	case err = <-result:
 		break
+	case <-done:
+		stop <- true
+		<-result
 	case <-timeout:
 		glog.Errorf("Timed out waiting for results, shutting down HTTP server\n")
 		stop <- true
+		<-result
 	}
 
 	return err
