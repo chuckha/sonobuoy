@@ -57,10 +57,18 @@ const (
 )
 
 // Start starts this HTTP server, binding it to s.BindAddr and sending results
-// over the s.Results channel
+// over the s.Results channel. The first argument is the stop channel, which
+// when written to will stop the server and close the HTTP socket. The second
+// argument is the "ready" channel, which this function will write to once the
+// HTTP server is ready for connections.
 func (s *server) Start(stop <-chan bool, ready chan<- bool) error {
 	mux := http.NewServeMux()
 	mux.Handle("/", http.NotFoundHandler())
+
+	// We handle /api/v1/results/by-node here, but we strip the prefix so that the
+	// handling function only has to do some simple string splitting to get the node name.
+	// An example call may look like `PUT /api/v1/results/by-node/node1/ansible`,
+	// which indicates that these are ansible results for node1.
 	mux.Handle(resultsByNode, http.StripPrefix(resultsByNode, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		s.nodeResultsHandler(w, r)
 	})))
@@ -82,6 +90,9 @@ func (s *server) Start(stop <-chan bool, ready chan<- bool) error {
 	go func() {
 		done <- server.Serve(l)
 	}()
+	// Let clients know they can send requests now (it's not perfect since the
+	// above goroutine may not schedule right away, but it's the best we can do
+	// and helps in testing.)
 	ready <- true
 
 	select {
@@ -107,6 +118,9 @@ func (s *server) nodeResultsHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// We accept PUT because the client is specifying the resource identifier via
+	// the HTTP path. (As opposed to POST, where typically the clients would post
+	// to a base URL and the server picks the final resource path.)
 	if r.Method != http.MethodPut {
 		http.Error(
 			w,
@@ -127,10 +141,14 @@ func (s *server) nodeResultsHandler(w http.ResponseWriter, r *http.Request) {
 		Body:        r.Body,
 	}
 
+	// Trigger our callback with this checkin record (which should write the file
+	// out.) The callback is responsible for doing a 409 conflict if results are
+	// given twice for the same node, etc.
 	s.NodeCallback(result, w)
 	r.Body.Close()
 }
 
+// convenience method to send when something went wrong
 func serverError(w http.ResponseWriter) {
 	http.Error(w, "Internal server error", http.StatusInternalServerError)
 }

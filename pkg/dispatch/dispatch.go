@@ -14,6 +14,9 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+// Package dispatch is responsible for dispatching the sonobuoy agent to each
+// node in the cluster, configuring the agent appropriately based on the user's
+// configuration.
 package dispatch
 
 // A Dispatcher is something that can declare resources in kubernetes and clean

@@ -14,6 +14,9 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+// Package agent is responsible for gathering information about a local
+// node and submitting the results to a master instance, via the phone-home
+// URL.
 package agent
 
 import (
@@ -32,15 +35,21 @@ func Run(cfg *Config) error {
 		return fmt.Errorf("no phone home URL set, cannot continue")
 	}
 
+	// 1. Run ansible
 	output, err := ansible.Run(cfg.ChrootDir)
 	if err != nil {
 		return err
 	}
 	glog.Infof("Got ansible results: %v", string(output))
 	err = submitResults(output, cfg.PhoneHomeURL+"/"+cfg.NodeName+"/ansible")
+
+	// TODO: run more things and call submitResults on them
+
 	return err
 }
 
+// submitResults takes a given file path, created by something like ansible,
+// and uploads it to the configured phone-home URL.
 func submitResults(json []byte, url string) error {
 	client := &http.Client{}
 	req, err := http.NewRequest(http.MethodPut, url, bytes.NewBuffer(json))

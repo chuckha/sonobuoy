@@ -92,6 +92,7 @@ func (d *AgentDispatcher) Cleanup(gracePeriod int64) error {
 		GracePeriodSeconds: &gracePeriod,
 	}
 
+	// Tolerate things not actually being created yet...
 	if d.configMap != nil {
 		err = d.KubeClient.CoreV1().ConfigMaps(d.Namespace).Delete(d.configMap.Name, deleteOptions)
 		if err != nil {
@@ -109,13 +110,17 @@ func (d *AgentDispatcher) Cleanup(gracePeriod int64) error {
 	return err
 }
 
-// SessionID returns a unique identifier for this dispatcher, used for tagging objects and cleaning them up later
+// SessionID returns a unique identifier for this dispatcher, used for tagging
+// objects and cleaning them up later
 func (d *AgentDispatcher) SessionID() string {
 	ret := make([]byte, hex.EncodedLen(8))
 	hex.Encode(ret, d.UUID.Bytes()[0:8])
 	return string(ret)
 }
 
+// return the image specified at build time, using the buildinfo.Version and
+// buildinfo.DockerImage strings. Fall back on the latest gcr.io image in case
+// it wasn't specified
 func agentImage() string {
 	var image, tag string
 	if buildinfo.Version == "" {
@@ -184,6 +189,11 @@ func (d *AgentDispatcher) buildDaemonSet() (*v1beta1ext.DaemonSet, error) {
 					Labels: d.applyDefaultLabels(map[string]string{}),
 				},
 				Spec: v1.PodSpec{
+					// This helps us run on "master" nodes in clusters bootstrapped with
+					// kubeadm, which have taints in place to stop normal jobs from running on
+					// the master. TODO: we should decide what to do if there's other taints
+					// preventing pods from running too (potentially don't dispatch to such
+					// nodes to begin with)
 					Tolerations: []v1.Toleration{
 						v1.Toleration{
 							Key:      "node-role.kubernetes.io/master",
@@ -191,10 +201,13 @@ func (d *AgentDispatcher) buildDaemonSet() (*v1beta1ext.DaemonSet, error) {
 							Effect:   v1.TaintEffectNoSchedule,
 						},
 					},
+					// "Always" is the only supported restart policy for DaemonSets :-(
 					RestartPolicy: v1.RestartPolicyAlways,
-					HostNetwork:   true,
-					HostIPC:       true,
-					HostPID:       true,
+					// Use the host's network, IPC, and PID namespacing so that ansible's
+					// results are accurate.
+					HostNetwork: true,
+					HostIPC:     true,
+					HostPID:     true,
 					Containers: []v1.Container{
 						v1.Container{
 							Name:            "sonobuoy-agent",
@@ -202,6 +215,7 @@ func (d *AgentDispatcher) buildDaemonSet() (*v1beta1ext.DaemonSet, error) {
 							ImagePullPolicy: v1.PullIfNotPresent,
 							Env: []v1.EnvVar{
 								v1.EnvVar{
+									// Configure the node name with the downward API
 									Name: "NODE_NAME",
 									ValueFrom: &v1.EnvVarSource{
 										FieldRef: &v1.ObjectFieldSelector{
@@ -210,15 +224,22 @@ func (d *AgentDispatcher) buildDaemonSet() (*v1beta1ext.DaemonSet, error) {
 									},
 								},
 							},
+							// Sleep for a while after running: the cleanup step will delete this
+							// pod anyway, this just helps avoid us getting relaunched and thrashing
+							// while other nodes check in.
 							Command: []string{"sh", "-c", "/sonobuoy agent -v 5 --logtostderr && sleep 3600"},
+							// Privileged is also important for various fact gathering
 							SecurityContext: &v1.SecurityContext{
 								Privileged: &tru,
 							},
 							VolumeMounts: []v1.VolumeMount{
+								// This is how we actually see the host's filesystem: we drop the root
+								// fs under /node so ansible can chroot to it.
 								v1.VolumeMount{
 									Name:      "root",
 									MountPath: "/node",
 								},
+								// Drops the agent configmap in /etc/sonobuoy/agent.json
 								v1.VolumeMount{
 									Name:      "config",
 									MountPath: "/etc/sonobuoy",
@@ -227,6 +248,7 @@ func (d *AgentDispatcher) buildDaemonSet() (*v1beta1ext.DaemonSet, error) {
 						},
 					},
 					Volumes: []v1.Volume{
+						// See above for what these volumes are for
 						v1.Volume{
 							Name: "root",
 							VolumeSource: v1.VolumeSource{
@@ -254,6 +276,9 @@ func (d *AgentDispatcher) buildDaemonSet() (*v1beta1ext.DaemonSet, error) {
 	return ds, nil
 }
 
+// All our resources should have a commmon label set, particularly a unique
+// sesssion ID for sonobuoy run. This can allow fallback cleanup for this
+// session by deleting any resources with `sonobuoy-run=<sessionID>`
 func (d *AgentDispatcher) applyDefaultLabels(labels map[string]string) map[string]string {
 	labels["component"] = "sonobuoy"
 	labels["tier"] = "analysis"

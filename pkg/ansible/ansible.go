@@ -14,6 +14,9 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+// Package ansible is responsible for wrapping calls to the ansible binary
+// (calling the "setup" module), and returning the resulting JSON as a byte
+// array.
 package ansible
 
 import (
