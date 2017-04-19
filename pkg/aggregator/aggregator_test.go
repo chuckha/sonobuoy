@@ -26,12 +26,13 @@ import (
 func TestGatherAndAwaitResults(t *testing.T) {
 	// Happy path
 	withNewAggregator(t, []string{"node1"}, func(agg *NodeAggregator) {
-		stop := make(chan bool, 1)
-		ready := make(chan bool)
+		stop := make(chan bool)
 		done := make(chan error)
+		ready := make(chan bool, 1)
+		complete := make(chan bool, 1)
 
 		go func() {
-			done <- agg.GatherAndAwaitResults(stop, ready)
+			done <- agg.GatherAndAwaitResults(stop, ready, complete)
 		}()
 		select {
 		case <-ready:
@@ -45,8 +46,6 @@ func TestGatherAndAwaitResults(t *testing.T) {
 			t.Errorf("Got non-200 response from server: %v", resp.StatusCode)
 		}
 
-		// The server *should* stop on its own, but it sucks when tests hang due to a
-		// bug, so stop it anyway (stop is a buffered channel)
 		stop <- true
 		err := <-done
 		if err != nil {
@@ -67,12 +66,13 @@ func TestGatherAndAwaitResults(t *testing.T) {
 
 func TestGatherAndAwaitResults_wrongnodes(t *testing.T) {
 	withNewAggregator(t, []string{"node1"}, func(agg *NodeAggregator) {
-		stop := make(chan bool, 1)
-		ready := make(chan bool)
+		stop := make(chan bool)
 		done := make(chan error)
+		ready := make(chan bool, 1)
+		complete := make(chan bool, 1)
 
 		// Check in an unexpected node, should get forbidden
-		go func() { done <- agg.GatherAndAwaitResults(stop, ready) }()
+		go func() { done <- agg.GatherAndAwaitResults(stop, ready, complete) }()
 		select {
 		case <-ready:
 			break
@@ -101,11 +101,12 @@ func TestGatherAndAwaitResults_duplicates(t *testing.T) {
 	// Expect 2 nodes so the server doesn't automatically quit
 	expectNodes := []string{"node1", "node2"}
 	withNewAggregator(t, expectNodes, func(agg *NodeAggregator) {
-		stop := make(chan bool, 1)
-		ready := make(chan bool)
+		stop := make(chan bool)
 		done := make(chan error)
+		ready := make(chan bool, 1)
+		complete := make(chan bool, 1)
 
-		go func() { done <- agg.GatherAndAwaitResults(stop, ready) }()
+		go func() { done <- agg.GatherAndAwaitResults(stop, ready, complete) }()
 		select {
 		case <-ready:
 			break

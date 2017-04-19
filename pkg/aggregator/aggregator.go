@@ -40,8 +40,12 @@ type NodeAggregator struct {
 }
 
 // GatherAndAwaitResults begins the HTTP server and waits for all the required
-// nodes to check in.  It returns nil when all results have finished as expected.
-func (n *NodeAggregator) GatherAndAwaitResults(stop, ready chan bool) error {
+// nodes to check in.
+//
+// The stop chan can be written to by callers to stop the HTTP server
+// The ready chan is written to when the server is ready for connections
+// The complete chan is written to when the ndoes are all checked in
+func (n *NodeAggregator) GatherAndAwaitResults(stop <-chan bool, ready chan<- bool, complete chan<- bool) error {
 	// Record results in the NodeAggregator struct
 	n.results = make(map[string]*nodeCheckin)
 
@@ -102,9 +106,8 @@ func (n *NodeAggregator) GatherAndAwaitResults(stop, ready chan bool) error {
 
 		// If that's all the nodes, stop serving now
 		if len(n.results) == len(n.ExpectNodes) {
-			stop <- true
+			complete <- true
 		}
-
 	}
 
 	s := &server{
