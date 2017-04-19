@@ -14,6 +14,10 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+// Package aggregator is responsible for hosting an HTTP server which
+// aggregates results from all of the nodes that are running sonobuoy agent. It
+// is not responsible for dispatching the nodes (see pkg/dispatch), only
+// expecting their results.
 package aggregator
 
 import (
@@ -55,7 +59,13 @@ func (n *NodeAggregator) GatherAndAwaitResults(stop <-chan bool, ready chan<- bo
 		nodemap[node] = true
 	}
 
+	// This is called every time the HTTP server gets a well-formed request with
+	// results. This method is responsible for returning with things like a 409
+	// conflict if a node has checked in twice (or a 403 forbidden if a node isn't
+	// expected). It also knows when all nodes have checked in, and is responsible
+	// for signaling over the "complete" channel when that happens.
 	nodeCallback := func(checkin *nodeCheckin, w http.ResponseWriter) {
+		// Only gather from expected nodes
 		if _, ok := nodemap[checkin.NodeName]; !ok {
 			glog.Warningf("Got checkin from unexpected node %v\n", checkin.NodeName)
 			http.Error(
@@ -66,6 +76,7 @@ func (n *NodeAggregator) GatherAndAwaitResults(stop <-chan bool, ready chan<- bo
 			return
 		}
 
+		// Nodes can't check in twice
 		if _, ok := n.results[checkin.NodeName]; ok {
 			glog.Warningf("Got a duplicate checkin from from node %v\n", checkin.NodeName)
 			http.Error(
@@ -76,10 +87,9 @@ func (n *NodeAggregator) GatherAndAwaitResults(stop <-chan bool, ready chan<- bo
 			return
 		}
 
+		// Create the output directory for the results
 		nodeDir := path.Join(n.OutputDir, checkin.NodeName)
 		resultsFile := path.Join(nodeDir, checkin.ResultsType+".json")
-
-		// Create the output directory for the results
 		if err := os.MkdirAll(nodeDir, 0755); err != nil {
 			glog.Errorf("Could not make directory %v: %v", nodeDir, err)
 			serverError(w)
@@ -104,12 +114,13 @@ func (n *NodeAggregator) GatherAndAwaitResults(stop <-chan bool, ready chan<- bo
 		n.results[checkin.NodeName] = checkin
 		glog.Infof("Got results from %v out of %v nodes\n", len(n.results), len(n.ExpectNodes))
 
-		// If that's all the nodes, stop serving now
+		// If that's all the nodes, let the caller know (and they can stop the server)
 		if len(n.results) == len(n.ExpectNodes) {
 			complete <- true
 		}
 	}
 
+	// Start the server with the above callback
 	s := &server{
 		BindAddr:     n.BindAddr,
 		NodeCallback: nodeCallback,
