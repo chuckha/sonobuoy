@@ -52,7 +52,7 @@ func TestGatherAndAwaitResults(t *testing.T) {
 			t.Errorf("GatherAndAwaitResults returned error %v", err)
 		}
 
-		if result, ok := agg.results["node1"]; ok {
+		if result, ok := agg.results["node1/ansible"]; ok {
 			bytes, err := ioutil.ReadFile(result.Path)
 			if string(bytes) != "foo" {
 				t.Errorf("Results for node1 incorrect (got %v): %v", string(bytes), err)
