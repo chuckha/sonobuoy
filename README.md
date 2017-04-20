@@ -66,9 +66,11 @@ Teardown:
 $ kubectl delete -f yaml/
 ```
 
+"HaVe FuN sToRmInG tHe CaStLe!"
+
 [kubernetes]: https://github.com/kubernetes/kubernetes/
 [mount]: https://kubernetes.io/docs/concepts/storage/persistent-volumes/#claims-as-volumes 
 [pvc]: https://kubernetes.io/docs/concepts/storage/persistent-volumes/#persistentvolumeclaims
 [rbac]: https://kubernetes.io/docs/admin/authorization/rbac/
 [results]: https://github.com/heptio/sonobuoy/blob/master/yaml/sonobuoy-configmap.yaml#L44
-[sonodocs]: https://github.com/heptio/sonobuoy/blob/master/docs/modusoperandi.md
+[sonodocs]: https://github.com/heptio/sonobuoy/blob/master/doc/modusoperandi.md

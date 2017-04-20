@@ -18,7 +18,5 @@ Once the config is loaded, sonobuoy will parse the config settings and gather ac
 
 For more details on node data collection, see the [aggregation doc.][aggregation]
 
-"HaVe FuN sToRmInG tHe CaStLe!"
-
 [aggregation]: https://github.com/heptio/sonobuoy/blob/master/doc/aggregation.md
 [inargs]: https://github.com/heptio/sonobuoy/blob/master/pkg/discovery/config.go#L41
