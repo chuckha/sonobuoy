@@ -22,7 +22,7 @@ This gap in recording/reporting, is the primary role that sonobuoy aims to fill.
   * Workload debugging
   * Configuration validation
   * State of record for disaster recovery
-* Health analysis of a newly installed cluster
+* Health analysis of a newly installed cluster a.k.a 'cluster conformance'
 * ... 
 
 ## Non-goals:
@@ -43,11 +43,7 @@ $ sudo make all
 ```
 
 # Running Sonobuoy
-Sonobuoy takes as input, a single `config.json` file that can either be located in its local directory or under `/etc/sonobuoy/config.json`.  For convenience, there is an example `config.json` provided in the root of the repository to allow operators to simply download the repo and evaluate sonobuoy without having to download containers.
-
-For a complete list of all the input options look [here][inargs]. 
-
-TODO: Add https://www.websequencediagrams.com/ example b/c it's slick.
+**NOTE:** Before continuing, we recommend reading our [docs on how sonobuoy works][sonodocs] in order to properly set your configuration prior to execution.
 
 ## Local:
 If you want to test locally, be certain to update the local `config.json` to point to a valid `KUBECONFIG`.  Depending on your settings, you may need to update your [RBAC][rbac] rules.  Once built, simply execute: 
@@ -59,8 +55,7 @@ $ ./sonobuoy -v 5 -logtostderr
 The results will be placed under a local ./results directory which can then be uncompressed and inspected.
 
 ## Containerized: 
-
-TODO: outline PVC usage.
+**NOTE:** When running containerized you will need to add a [PVC][pvc] to your submission in order for you to record your results for further analysis.  Be certain to also update your [config-map][results] to point to the [mount location][mount] of your PVC.
 
 Standup: 
 ```
@@ -72,5 +67,8 @@ $ kubectl delete -f yaml/
 ```
 
 [kubernetes]: https://github.com/kubernetes/kubernetes/
+[mount]: https://kubernetes.io/docs/concepts/storage/persistent-volumes/#claims-as-volumes 
+[pvc]: https://kubernetes.io/docs/concepts/storage/persistent-volumes/#persistentvolumeclaims
 [rbac]: https://kubernetes.io/docs/admin/authorization/rbac/
-[inargs]: https://github.com/heptio/sonobuoy/blob/master/pkg/discovery/config.go#L41
+[results]: https://github.com/heptio/sonobuoy/blob/master/yaml/sonobuoy-configmap.yaml#L44
+[sonodocs]: https://github.com/heptio/sonobuoy/blob/master/docs/modusoperandi.md
