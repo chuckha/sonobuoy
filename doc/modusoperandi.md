@@ -13,7 +13,23 @@ Sonobuoy can be configured to collect different sets of data, which can vary dep
 Once the config is loaded, sonobuoy will parse the config settings and gather according the input parameters.  Depending on the input options, sonobuoy may submit more pods to collect node information. 
 
 ## Containerized Sequence Flow 
-
+<!-- 
+title Sonbuoy High Level Overview
+client->api-server: submit sonobuoy .yaml files (PVC required)
+scheduler->api-server: bind sonobuoy pod to node(x)
+node(x)->api-server: collect sonobuoy.pod details
+node(x)->node(x): pull sonobuoy
+node(x)->sonobuoy: start container
+sonobuoy->api-server: query user specified resources
+sonobuoy->api-server: submit daemon-set to collect node details if specified
+sonobuoy->*e2e.test: exec if specified
+e2e.test->api-server: run tests
+e2e.test->sonobuoy: record results
+destroy e2e.test
+sonobuoy->sonobuoy: collect data into UUID-results.tar.gz store on PVC
+destroy sonobuoy
+node(x)->api-server: sonobuoy complete
+-->
 ![sonobuoy normal flow diagram](high-level-overview.png)
 
 For more details on node data collection, see the [aggregation doc.][aggregation]
