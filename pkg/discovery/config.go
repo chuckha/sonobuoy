@@ -104,6 +104,7 @@ type Config struct {
 
 	// Other properties
 	HostFacts     bool `json:"hostfacts"`
+	HostLogs      bool `json:"hostlogs"`
 	ServerVersion bool `json:"serverversion"`
 
 	// Non-serialized used for internal passing.
@@ -172,6 +173,7 @@ func SetConfigDefaults(dc *Config) {
 	dc.StorageClasses = true
 	dc.ThirdPartyResources = true
 	dc.HostFacts = false
+	dc.HostLogs = false
 	dc.AggregationBindAddress = "0.0.0.0"
 	dc.AggregationBindPort = 8080
 	dc.AggregationTimeoutSeconds = 300 // 5 minutes
@@ -271,7 +273,7 @@ func LoadConfig() (kubernetes.Interface, *Config) {
 	}
 
 	// 5 - figure out what address we will tell pods to phone home to for aggregation
-	if dc.HostFacts && dc.AggregationAdvertiseAddress == "" {
+	if (dc.HostFacts || dc.HostLogs) && dc.AggregationAdvertiseAddress == "" {
 		if ip, ok := os.LookupEnv("SONOBUOY_ADVERTISE_IP"); ok {
 			dc.AggregationAdvertiseAddress = fmt.Sprintf("%v:%d", ip, dc.AggregationBindPort)
 		} else {

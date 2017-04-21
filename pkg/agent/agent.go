@@ -22,11 +22,13 @@ package agent
 import (
 	"fmt"
 	"net/http"
+	"os"
+	"time"
 
 	"bytes"
 
 	"github.com/golang/glog"
-	"github.com/heptio/sonobuoy/pkg/ansible"
+	"github.com/heptio/sonobuoy/pkg/hostdata"
 )
 
 // Run the sonobuoy agent
@@ -34,21 +36,61 @@ func Run(cfg *Config) error {
 	if cfg.PhoneHomeURL == "" {
 		return fmt.Errorf("no phone home URL set, cannot continue")
 	}
+	urlBase := cfg.PhoneHomeURL + "/" + cfg.NodeName
 
 	// 1. Run ansible
-	output, err := ansible.Run(cfg.ChrootDir)
+	if cfg.Ansible {
+		output, err := hostdata.RunAnsible(cfg.ChrootDir)
+		if err != nil {
+			return err
+		}
+		glog.V(5).Infof("Got ansible results: %v", string(output))
+		err = submitResults(output, urlBase+"/ansible")
+	}
+
+	// 2. Gather systemd logs with journalctl
+	if cfg.SystemdLogs {
+		logpath, err := hostdata.RunSystemdLogs(time.Duration(cfg.SystemdLogMinutes)*time.Minute, cfg.ChrootDir)
+		defer os.RemoveAll(logpath)
+		if err != nil {
+			return err
+		}
+		glog.Infof("Got systemd logs: %v", logpath)
+		err = submitResultsFile(logpath, urlBase+"/systemd_logs")
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// submitResultsFile takes a given file path, created by something like the
+// systemd logs gatherer, and uploads it to the configured phone-home URL.
+func submitResultsFile(path string, url string) error {
+	file, err := os.Open(path)
 	if err != nil {
 		return err
 	}
-	glog.Infof("Got ansible results: %v", string(output))
-	err = submitResults(output, cfg.PhoneHomeURL+"/"+cfg.NodeName+"/ansible")
+	defer file.Close()
 
-	// TODO: run more things and call submitResults on them
+	client := &http.Client{}
+	req, err := http.NewRequest(http.MethodPut, url, file)
+	if err != nil {
+		return err
+	}
 
-	return err
+	resp, err := client.Do(req)
+	if err != nil {
+		return fmt.Errorf("error phoning home to %v: %v", url, err)
+	}
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("got a %v response when phoning home to %v", resp.StatusCode, url)
+	}
+	return nil
 }
 
-// submitResults takes a given file path, created by something like ansible,
+// submitResults takes a given byte array, created by something like ansible,
 // and uploads it to the configured phone-home URL.
 func submitResults(json []byte, url string) error {
 	client := &http.Client{}

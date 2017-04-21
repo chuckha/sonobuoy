@@ -28,12 +28,21 @@ import (
 	"k8s.io/client-go/pkg/api/v1"
 )
 
-func gatherHostFacts(client kubernetes.Interface, dc *Config) error {
+func gatherHostData(client kubernetes.Interface, dc *Config) error {
 	// TODO: there are other places that iterate through the CoreV1.Nodes API
 	// call, we should only do this in one place and cache it.
 	nodelist, err := client.CoreV1().Nodes().List(metav1.ListOptions{})
 	if err != nil {
 		return err
+	}
+
+	// TODO: make this a little more DRY
+	var resultTypes []string
+	if dc.HostFacts {
+		resultTypes = append(resultTypes, "ansible")
+	}
+	if dc.HostLogs {
+		resultTypes = append(resultTypes, "systemd_logs")
 	}
 
 	hosts := make(map[string]string, len(nodelist.Items))
@@ -64,10 +73,16 @@ func gatherHostFacts(client kubernetes.Interface, dc *Config) error {
 		hosts[node.Name] = addr
 	}
 
+	if len(nodeNames) == 0 || len(resultTypes) == 0 {
+		glog.Warningf("Skipping host data gathering: no data to gather (%n hosts, %n result types)", len(nodeNames), len(resultTypes))
+		return nil
+	}
+
 	aggr := &aggregator.NodeAggregator{
-		BindAddr:    dc.AggregationBindAddress + ":" + strconv.Itoa(dc.AggregationBindPort),
-		ExpectNodes: nodeNames,
-		OutputDir:   path.Join(dc.OutputDir(), "hosts"),
+		BindAddr:          dc.AggregationBindAddress + ":" + strconv.Itoa(dc.AggregationBindPort),
+		ExpectNodes:       nodeNames,
+		ExpectResultTypes: resultTypes,
+		OutputDir:         path.Join(dc.OutputDir(), "hosts"),
 	}
 
 	// Ensure we only wait for results for a certain time

@@ -26,6 +26,10 @@ import (
 type Config struct {
 	// Ansible determines whether we use the ansible `setup` gatherer
 	Ansible bool `json:"ansible,omitempty"`
+	// SystemdLogs determines whether we grab systemd logs with journalctl
+	SystemdLogs bool `json:"systemdlogs,omitempty"`
+	// SystemdLogMinutes determines how many minutes of logs we want to gather
+	SystemdLogMinutes int `json:"systemdlogminutes,omitempty"`
 	// PhoneHomeUrl is the URL we talk to for submitting results
 	PhoneHomeURL string `json:"phonehomeurl,omitempty"`
 	// NodeName is the node name we should call ourselves when sending results
@@ -36,6 +40,8 @@ type Config struct {
 
 func setConfigDefaults(ac *Config) {
 	ac.Ansible = true
+	ac.SystemdLogs = true
+	ac.SystemdLogMinutes = 60 * 24
 	ac.ChrootDir = "/node"
 }
 

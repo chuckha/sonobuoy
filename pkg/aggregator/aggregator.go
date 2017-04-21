@@ -39,6 +39,8 @@ type NodeAggregator struct {
 	OutputDir string
 	// ExpectNodes is the list of nodes that we expect results for
 	ExpectNodes []string
+	// ExpectResultTypes is the list of types of results we need from each host
+	ExpectResultTypes []string
 
 	results map[string]*nodeCheckin
 }
@@ -59,6 +61,8 @@ func (n *NodeAggregator) GatherAndAwaitResults(stop <-chan bool, ready chan<- bo
 		nodemap[node] = true
 	}
 
+	successEvents := make(chan bool)
+
 	// This is called every time the HTTP server gets a well-formed request with
 	// results. This method is responsible for returning with things like a 409
 	// conflict if a node has checked in twice (or a 403 forbidden if a node isn't
@@ -76,12 +80,13 @@ func (n *NodeAggregator) GatherAndAwaitResults(stop <-chan bool, ready chan<- bo
 			return
 		}
 
-		// Nodes can't check in twice
-		if _, ok := n.results[checkin.NodeName]; ok {
-			glog.Warningf("Got a duplicate checkin from from node %v\n", checkin.NodeName)
+		// Nodes can't check in the same result twice
+		checkinID := checkin.NodeName + "/" + checkin.ResultsType
+		if _, ok := n.results[checkinID]; ok {
+			glog.Warningf("Got a duplicate checkin of %v\n", checkinID)
 			http.Error(
 				w,
-				fmt.Sprintf("Results already received from node %v", checkin.NodeName),
+				fmt.Sprintf("Results already received for %v", checkinID),
 				http.StatusConflict,
 			)
 			return
@@ -110,14 +115,11 @@ func (n *NodeAggregator) GatherAndAwaitResults(stop <-chan bool, ready chan<- bo
 		glog.Infof("wrote results to %v\n", resultsFile)
 		checkin.Path = resultsFile
 
-		// Take note that we've recorded this node
-		n.results[checkin.NodeName] = checkin
-		glog.Infof("Got results from %v out of %v nodes\n", len(n.results), len(n.ExpectNodes))
+		// Take note that we've recorded this node. Detecting when we're done is part of
+		// a select loop below, to prevent race conditions with concurrent checkins.
+		n.results[checkinID] = checkin
 
-		// If that's all the nodes, let the caller know (and they can stop the server)
-		if len(n.results) == len(n.ExpectNodes) {
-			complete <- true
-		}
+		successEvents <- true
 	}
 
 	// Start the server with the above callback
@@ -126,8 +128,27 @@ func (n *NodeAggregator) GatherAndAwaitResults(stop <-chan bool, ready chan<- bo
 		NodeCallback: nodeCallback,
 	}
 
-	err := s.Start(stop, ready)
-	glog.Infof("Results aggregation server shutting down with %v of %v nodes seen\n", len(n.results), len(n.ExpectNodes))
+	result := make(chan error, 1)
+	go func() {
+		result <- s.Start(stop, ready)
+		glog.Infof("Results aggregation server shutting down with %v of %v nodes seen\n", len(n.results), len(n.ExpectNodes)*len(n.ExpectResultTypes))
+	}()
 
-	return err
+loop:
+	for {
+		select {
+		case err := <-result:
+			return err
+		case <-successEvents:
+			glog.Infof("Got %v out of %v expected results\n", len(n.results), len(n.ExpectNodes)*len(n.ExpectResultTypes))
+			// If that's all the nodes, let the caller know (and they can stop the server)
+			if len(n.results) >= len(n.ExpectNodes)*len(n.ExpectResultTypes) {
+				complete <- true
+				break loop
+			}
+			break
+		}
+	}
+
+	return nil
 }

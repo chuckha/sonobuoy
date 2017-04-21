@@ -60,10 +60,11 @@ func Run(version string) []error {
 
 	// 4. Start running the host query aggregator (it could take a while)
 	hostFactsResult := make(chan error, 1)
-	if dc.HostFacts {
+	if dc.HostFacts || dc.HostLogs {
 		go func() {
 			agentCfg := &agent.Config{
-				Ansible:      true,
+				Ansible:      dc.HostFacts,
+				SystemdLogs:  dc.HostLogs,
 				ChrootDir:    "/node",
 				PhoneHomeURL: "http://" + dc.AggregationAdvertiseAddress + "/api/v1/results/by-node",
 			}
@@ -78,7 +79,7 @@ func Run(version string) []error {
 				return
 			}
 
-			hostFactsResult <- gatherHostFacts(kubeClient, dc)
+			hostFactsResult <- gatherHostData(kubeClient, dc)
 		}()
 	} else {
 		// Put a nil result in the channel so reading it later won't block

@@ -14,10 +14,10 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// Package ansible is responsible for wrapping calls to the ansible binary
-// (calling the "setup" module), and returning the resulting JSON as a byte
-// array.
-package ansible
+// Package hostdata is responsible for the logic behind gathering various
+// information about a host, including ansible facts, logs, process table
+// output, etc.
+package hostdata
 
 import (
 	"bytes"
@@ -28,22 +28,15 @@ import (
 	"github.com/golang/glog"
 )
 
-const (
-	// ConfigLocation is the directory under the configured ansible output path under which the configuration is stored
-	ConfigLocation = "config"
-	// ResultsLocation is the directory under the configured ansible output path under which the resulting host data
-	ResultsLocation = "results"
-)
-
-// Config represents the configuration of ansible for reaching out to physical
-// hosts in the cluster.
-type Config struct {
+// AnsibleConfig represents the configuration of ansible for reaching out to
+// physical hosts in the cluster.
+type AnsibleConfig struct {
 	// Chroot is the directory contianing the host's filesystem
 	Chroot string
 }
 
-// Run ansible locally in the given chroot
-func Run(chroot string) ([]byte, error) {
+// RunAnsible runs ansible locally in the given chroot
+func RunAnsible(chroot string) ([]byte, error) {
 	// Find the ansible command
 	ansiblePath, err := exec.LookPath("ansible")
 	if err != nil {
