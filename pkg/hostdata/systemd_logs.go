@@ -17,7 +17,6 @@ limitations under the License.
 package hostdata
 
 import (
-	"bytes"
 	"fmt"
 	"io/ioutil"
 	"os/exec"
@@ -44,22 +43,14 @@ func RunSystemdLogs(duration time.Duration, chroot string) (string, error) {
 	// `journalctl` is run in a chroot, but the out file is stored in the local
 	// fs.
 	cmdStr := fmt.Sprintf("chroot '%s' /bin/journalctl -o json -a --no-pager --since '%s' >'%s'", chroot, startDateStr, logfile)
-
-	var out bytes.Buffer
-	out.Grow(4096) // Allocate some space for any error messages from journalctl
 	cmd := exec.Command("/bin/sh", "-c", cmdStr)
-	cmd.Stdout = &out
-	cmd.Stderr = &out
 
-	// Start the command in the background
-	err = cmd.Start()
+	// Run the command (blocking), capturing its output. Its stdout is written to
+	// the temp file, so `out` should only contain error messages from running the
+	// command itself.
+	out, err := cmd.CombinedOutput()
 	if err != nil {
-		return logfile, err
-	}
-
-	err = cmd.Wait()
-	if err != nil {
-		glog.Errorf("Error running journalctl: %v\n", out.String())
+		glog.Errorf("Error running journalctl: %v\n", string(out))
 		return logfile, fmt.Errorf("journalctl returned an error: %v", err)
 	}
 

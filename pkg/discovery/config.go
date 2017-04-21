@@ -224,6 +224,28 @@ func (dc *Config) ResourcesToQuery() map[string]string {
 	return ret
 }
 
+// HostDataTypes gives a []string of the types of results (passed to the
+// server as /api/v1/results/by-node/nodename/STRING) that should be expected
+// from this configuration.
+func (dc *Config) HostDataTypes() []string {
+	resultTypes := make([]string, 0, 2)
+	if dc.HostLogs {
+		resultTypes = append(resultTypes, "systemd_logs")
+	}
+	if dc.HostFacts {
+		resultTypes = append(resultTypes, "ansible")
+	}
+
+	return resultTypes
+}
+
+// ShouldDispatchHostAgents returns whether we need to dispatch sonobuoy agents
+// as a DaemonSet. This is true if things like HostLogs or HostFacts are
+// configured.
+func (dc *Config) ShouldDispatchHostAgents() bool {
+	return dc.HostFacts || dc.HostLogs
+}
+
 // LoadConfig will parse input + config file and return a clientset, and config
 func LoadConfig() (kubernetes.Interface, *Config) {
 	var config *rest.Config

@@ -59,7 +59,7 @@ func TestRun(t *testing.T) {
 	})
 }
 
-func TestRun_justansible(t *testing.T) {
+func TestRunOnlyAnsible(t *testing.T) {
 	withFakeBinaries(t, []string{"ansible"}, func() {
 		cfg := &Config{
 			Ansible:      true,
@@ -83,7 +83,7 @@ func TestRun_justansible(t *testing.T) {
 	})
 }
 
-func TestRun_justlogs(t *testing.T) {
+func TestRunOnlyLogs(t *testing.T) {
 	withFakeBinaries(t, []string{"chroot"}, func() {
 		cfg := &Config{
 			Ansible:      false,
@@ -110,7 +110,7 @@ func TestRun_justlogs(t *testing.T) {
 func withFakeBinaries(t *testing.T, binaries []string, callback func()) {
 	// Write a fake ansible script out, which is just a shell script that exits 0
 	tmpdir, err := ioutil.TempDir("", "sonobuoy_fake_binpath")
-	//defer os.RemoveAll(tmpdir)
+	defer os.RemoveAll(tmpdir)
 	if err != nil {
 		t.Fatalf("Could not create temporary directory %v: %v", tmpdir, err)
 	}
@@ -138,7 +138,7 @@ const aggregatorPort = 8090
 func withAggregator(t *testing.T, nodenames []string, resultTypes []string, callback func(aggr *aggregator.NodeAggregator)) {
 	// Create a temporary directory for results gathering
 	tmpdir, err := ioutil.TempDir("", "sonobuoy_results_dir")
-	//defer os.RemoveAll(tmpdir)
+	defer os.RemoveAll(tmpdir)
 	if err != nil {
 		t.Fatalf("Could not create temporary directory %v: %v", tmpdir, err)
 	}
