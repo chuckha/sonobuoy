@@ -60,7 +60,7 @@ func Run(version string) []error {
 
 	// 4. Start running the host query aggregator (it could take a while)
 	hostFactsResult := make(chan error, 1)
-	if dc.HostFacts || dc.HostLogs {
+	if dc.ShouldDispatchHostAgents() {
 		go func() {
 			agentCfg := &agent.Config{
 				Ansible:      dc.HostFacts,

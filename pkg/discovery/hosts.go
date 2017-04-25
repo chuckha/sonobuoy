@@ -36,15 +36,6 @@ func gatherHostData(client kubernetes.Interface, dc *Config) error {
 		return err
 	}
 
-	// TODO: make this a little more DRY
-	var resultTypes []string
-	if dc.HostFacts {
-		resultTypes = append(resultTypes, "ansible")
-	}
-	if dc.HostLogs {
-		resultTypes = append(resultTypes, "systemd_logs")
-	}
-
 	hosts := make(map[string]string, len(nodelist.Items))
 	nodeNames := make([]string, len(nodelist.Items))
 	for i, node := range nodelist.Items {
@@ -73,6 +64,7 @@ func gatherHostData(client kubernetes.Interface, dc *Config) error {
 		hosts[node.Name] = addr
 	}
 
+	resultTypes := dc.HostDataTypes()
 	if len(nodeNames) == 0 || len(resultTypes) == 0 {
 		glog.Warningf("Skipping host data gathering: no data to gather (%n hosts, %n result types)", len(nodeNames), len(resultTypes))
 		return nil

@@ -27,6 +27,7 @@ data:
           "events": true,
           "horizontalpodautoscalers": true,
           "hostfacts": true,
+          "hostlogs": true,
           "ingresses": true,
           "jobs": true,
           "limitranges": true,

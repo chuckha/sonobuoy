@@ -144,6 +144,7 @@ loop:
 			// If that's all the nodes, let the caller know (and they can stop the server)
 			if len(n.results) >= len(n.ExpectNodes)*len(n.ExpectResultTypes) {
 				complete <- true
+				<-result
 				break loop
 			}
 			break

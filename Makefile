@@ -13,43 +13,45 @@
 # limitations under the License.
 
 TARGET = sonobuoy
-TESTTARGET = e2e.test
+E2ETARGET = e2e.test
 GOTARGET = github.com/heptio/$(TARGET)
-TESTSRCS = $(GOTARGET)/pkg/battery
+E2ESRCS = $(GOTARGET)/pkg/battery
 BUILDMNT = /go/src/$(GOTARGET)
 REGISTRY ?= gcr.io/heptio-images
 VERSION ?= v0.1
+TESTARGS ?= -v
 IMAGE = $(REGISTRY)/$(BIN)
 BUILD_IMAGE ?= golang:1.7
-# NOTE - the only reason we don't choose alpine is it's missing gcc deps 
-# properly compile and we'd need to update. https://github.com/docker-library/golang/issues/153 
+TEST_PKGS ?= ./pkg/agent/... ./pkg/aggregator/...
+# NOTE - the only reason we don't choose alpine is it's missing gcc deps
+# properly compile and we'd need to update. https://github.com/docker-library/golang/issues/153
 # BUILD_IMAGE ?= golang:1.7-alpine3.5
 DOCKER ?= docker
 DIR := ${CURDIR}
-BUILD = go build -v -ldflags "-X github.com/heptio/sonobuoy/pkg/buildinfo.Version=$(VERSION) -X github.com/heptio/sonobuoy/pkg/buildinfo.DockerImage=$(REGISTRY)/$(TARGET)" && go test -i -c -o $(TESTTARGET) $(TESTSRCS)
-TEST = go test $(GOTARGET)/pkg/discovery
+BUILD = go build -v -ldflags "-X github.com/heptio/sonobuoy/pkg/buildinfo.Version=$(VERSION) -X github.com/heptio/sonobuoy/pkg/buildinfo.DockerImage=$(REGISTRY)/$(TARGET)" && go test -i -c -o $(E2ETARGET) $(E2ESRCS)
+TEST = go test $(TEST_PKGS) $(TESTARGS)
 
-local: 
+local:
 	$(BUILD)
 
-test: 
+test:
 	$(TEST)
 
 all: cbuild container
 
-cbuild: 
+cbuild:
 	$(DOCKER) run --rm -v $(DIR):$(BUILDMNT) -w $(BUILDMNT) $(BUILD_IMAGE) $(BUILD)
 
 container: cbuild
 	$(DOCKER) build -t $(REGISTRY)/$(TARGET):latest -t $(REGISTRY)/$(TARGET):$(VERSION) .
 
 # TODO: Determine tagging mechanics
-push: 
+push:
 	docker -- push $(REGISTRY)/$(TARGET)
 
 .PHONY: all local container cbuild push test
 
-clean: 
+clean:
 	rm -f $(TARGET) $(TESTTARGET)
 	$(DOCKER) rmi $(REGISTRY)/$(TARGET):latest
 	$(DOCKER) rmi $(REGISTRY)/$(TARGET):$(VERSION)
