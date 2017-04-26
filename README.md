@@ -66,6 +66,14 @@ Teardown:
 $ kubectl delete -f yaml/
 ```
 
+# Continuous Deployment
+
+The repo at github.com/heptio/sonobuoy is built by Heptio's jenkins instance at https://jenkins.i.heptio.com.
+
+- `master` is continually deployed to `gcr.io/heptio-images/sonobuoy:latest`. [![Build Status](https://jenkins.i.heptio.com/buildStatus/icon?job=sonobuoy-master-deployer)](https://jenkins.i.heptio.com/job/sonobuoy-master-deployer/)
+- All tags on the `master` branch are deployed to `gcr.io/heptio-images/sonobuoy:<tag>` [![Build Status](https://jenkins.i.heptio.com/buildStatus/icon?job=sonobuoy-tag-deployer&build=1)](https://jenkins.i.heptio.com/job/sonobuoy-tag-deployer/1/)
+- All pull requests destined for `master` are built and tested by jenkins, but no docker images are created or deployed.
+
 "HaVe FuN sToRmInG tHe CaStLe!"
 
 [kubernetes]: https://github.com/kubernetes/kubernetes/
