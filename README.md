@@ -49,7 +49,7 @@ $ sudo make all
 If you want to test locally, be certain to update the local `config.json` to point to a valid `KUBECONFIG`.  Depending on your settings, you may need to update your [RBAC][rbac] rules.  Once built, simply execute: 
 
 ```
-$ ./sonobuoy -v 5 -logtostderr 
+$ ./sonobuoy -v 5 --logtostderr 
 ```
 
 The results will be placed under a local ./results directory which can then be uncompressed and inspected.
