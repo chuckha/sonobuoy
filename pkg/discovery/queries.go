@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"os"
 	"path"
+	"time"
 
 	"github.com/golang/glog"
 
@@ -49,14 +50,23 @@ const (
 	HostsLocation = "hosts"
 )
 
+// queryData captures the results of the run for post-processing
+type queryData struct {
+	QueryObj    string `json:"queryobj,omitempty"`
+	ElapsedTime string `json:"time,omitempty"`
+	Error       error  `json:"error,omitempty"`
+}
+
 // objListQuery performs a list query and serialize the results
-func objListQuery(outpath string, file string, f ObjQuery) error {
+func objListQuery(outpath string, file string, f ObjQuery) (time.Duration, error) {
+	start := time.Now()
 	listObj, err := f()
+	duration := time.Since(start)
 	if err != nil {
-		return err
+		return duration, err
 	}
 	if listObj == nil {
-		return fmt.Errorf("got invalid response from API server")
+		return duration, fmt.Errorf("got invalid response from API server")
 	}
 	if listPtr, err := meta.GetItemsPtr(listObj); err == nil {
 		if items, err := conversion.EnforcePtr(listPtr); err == nil {
@@ -65,25 +75,54 @@ func objListQuery(outpath string, file string, f ObjQuery) error {
 			}
 		}
 	}
-	return err
+	return duration, err
 }
 
 // untypedQuery performs a untyped query and serialize the results
-func untypedQuery(outpath string, file string, f UntypedQuery) error {
+func untypedQuery(outpath string, file string, f UntypedQuery) (time.Duration, error) {
+	start := time.Now()
 	Obj, err := f()
+	duration := time.Since(start)
 	if err == nil && Obj != nil {
 		err = SerializeObj(Obj, outpath, file)
 	}
-	return err
+	return duration, err
 }
 
 // untypedListQuery performs a untyped list query and serialize the results
-func untypedListQuery(outpath string, file string, f UntypedListQuery) error {
+func untypedListQuery(outpath string, file string, f UntypedListQuery) (time.Duration, error) {
+	start := time.Now()
 	listObj, err := f()
+	duration := time.Since(start)
 	if err == nil && listObj != nil {
 		err = SerializeArrayObj(listObj, outpath, file)
 	}
-	return err
+	return duration, err
+}
+
+// recordResults will write out the execution results of a query.
+func recordResults(f *os.File, name string, duration time.Duration, recerr error) error {
+	summary := &queryData{
+		QueryObj:    name,
+		ElapsedTime: duration.String(),
+		Error:       recerr,
+	}
+	if err := SerializeObjAppend(f, summary); err != nil {
+		return err
+	}
+	return nil
+}
+
+// Wraps the execution of the function with a recorded timed snapshot
+func timedQuery(f *os.File, name string, errs []error, fn func() (time.Duration, error)) {
+	duration, err := fn()
+	if err != nil {
+		glog.Warningf("Failed query on resource: %v, error:%v", name, err)
+		errs = append(errs, err)
+	}
+	if err = recordResults(f, name, duration, err); err != nil {
+		errs = append(errs, err)
+	}
 }
 
 // queryNsResource performs the appropriate namespace-scoped query according to its input args
@@ -174,12 +213,31 @@ func QueryNSResources(kubeClient kubernetes.Interface, ns string, dc *Config) []
 	var errs []error
 	glog.Infof("Running ns query (%v)", ns)
 
+	// 1. Create the parent directory we will use to store the results
 	outdir := path.Join(dc.OutputDir(), NSResourceLocation, ns)
 	if err := os.MkdirAll(outdir, 0755); err != nil {
 		errs = append(errs, err)
 		return errs
 	}
 
+	// 2. Create the results output file.
+	f, err := os.Create(outdir + "/results.json")
+	if err != nil {
+		errs = append(errs, err)
+		return errs
+	}
+	defer func() {
+		f.WriteString("{}]")
+		f.Close()
+	}()
+
+	_, err = f.WriteString("[")
+	if err != nil {
+		errs = append(errs, err)
+		return errs
+	}
+
+	// 3. Setup label filter if there is one.
 	opts := metav1.ListOptions{}
 	if len(dc.LabelSelector) > 0 {
 		if _, err := labels.Parse(dc.LabelSelector); err != nil {
@@ -189,22 +247,27 @@ func QueryNSResources(kubeClient kubernetes.Interface, ns string, dc *Config) []
 		}
 	}
 
+	// 4. Execute the ns-query
 	for resourceKind, resourceScope := range dc.ResourcesToQuery() {
 		// We use annotations to tag resources as being namespaced vs not, skip any
 		// that aren't "ns"
 		if resourceScope == "ns" {
 			lister := func() (runtime.Object, error) { return queryNsResource(ns, resourceKind, opts, kubeClient) }
-			if err := objListQuery(outdir+"/", resourceKind+".json", lister); err != nil {
-				glog.Warningf("Failed query on resource: %v, ns: %v, error:%v", resourceKind, ns, err)
-				errs = append(errs, err)
-			}
+			query := func() (time.Duration, error) { return objListQuery(outdir+"/", resourceKind+".json", lister) }
+			timedQuery(f, resourceKind, errs, query)
 		}
 	}
 
 	if dc.CollectPodLogs {
-		if err := gatherPodLogs(kubeClient, ns, opts, dc); err != nil {
-			errs = append(errs, err...)
+		// NOTE: pod log collection is an aggregated time b/c propagating that detail back up
+		// is odd and would pollute some of the output.
+		start := time.Now()
+		if errlst := gatherPodLogs(kubeClient, ns, opts, dc); errlst != nil {
+			err = errlst[0]
+			errs = append(errs, errlst...)
 		}
+		duration := time.Since(start)
+		recordResults(f, "podlogs", duration, err)
 	}
 
 	return errs
@@ -217,24 +280,41 @@ func QueryNonNSResources(kubeClient kubernetes.Interface, dc *Config) []error {
 	glog.Infof("Running non-ns query")
 
 	resources := dc.ResourcesToQuery()
-	resourcesOutdir := path.Join(dc.OutputDir(), NonNSResourceLocation)
 
+	// 1. Create the parent directory we will use to store the results
+	outdir := path.Join(dc.OutputDir(), NonNSResourceLocation)
 	if len(resources) > 0 {
-		if err := os.MkdirAll(resourcesOutdir, 0755); err != nil {
+		if err := os.MkdirAll(outdir, 0755); err != nil {
 			errs = append(errs, err)
 			return errs
 		}
 	}
 
+	// 2. Create the results output file.
+	f, err := os.Create(outdir + "/results.json")
+	if err != nil {
+		errs = append(errs, err)
+		return errs
+	}
+	defer func() {
+		f.WriteString("{}]")
+		f.Close()
+	}()
+
+	_, err = f.WriteString("[")
+	if err != nil {
+		errs = append(errs, err)
+		return errs
+	}
+
+	// 3. Execute the non-ns-query
 	for resourceKind, resourceScope := range resources {
 		// We use annotations to tag resources as being namespaced vs not, skip any
 		// that aren't "non-ns"
 		if resourceScope == "non-ns" {
 			lister := func() (runtime.Object, error) { return queryNonNsResource(resourceKind, kubeClient) }
-			if err := objListQuery(resourcesOutdir, resourceKind+".json", lister); err != nil {
-				glog.Warningf("Failed query on resource: %v, error:%v", resourceKind, err)
-				errs = append(errs, err)
-			}
+			query := func() (time.Duration, error) { return objListQuery(outdir+"/", resourceKind+".json", lister) }
+			timedQuery(f, resourceKind, errs, query)
 		}
 	}
 
@@ -242,16 +322,22 @@ func QueryNonNSResources(kubeClient kubernetes.Interface, dc *Config) []error {
 	// cluster, but we also use that option to guide whether we get node data such
 	// as configz and healthz endpoints.
 	if dc.Nodes {
-		if err := gatherNodeData(kubeClient, dc); err != nil {
+		// NOTE: Node data collection is an aggregated time b/c propagating that detail back up
+		// is odd and would pollute some of the output.
+		start := time.Now()
+		if err = gatherNodeData(kubeClient, dc); err != nil {
 			errs = append(errs, err)
 		}
+		duration := time.Since(start)
+		recordResults(f, "podlogs", duration, err)
 	}
 
 	if dc.ServerVersion {
 		objqry := func() (interface{}, error) { return kubeClient.Discovery().ServerVersion() }
-		if err := untypedQuery(dc.OutputDir()+"/serverversion", "serverversion.json", objqry); err != nil {
-			errs = append(errs, err)
+		query := func() (time.Duration, error) {
+			return untypedQuery(dc.OutputDir()+"/serverversion", "serverversion.json", objqry)
 		}
+		timedQuery(f, "serverversion", errs, query)
 	}
 
 	return errs

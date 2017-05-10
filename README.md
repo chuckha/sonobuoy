@@ -16,12 +16,12 @@ Needless to say, there are a plethora of solutions that exist today, but there i
 This gap in recording/reporting, is the primary role that sonobuoy aims to fill.  In essence, Sonobuoy is an operator tool for inspecting a cluster's configuration and recording its state and behavioral characteristics.
 
 ### Use Cases
-* Selective dump of kubernetes resource objects for cluster snap-shotting 
+* Selective dump of kubernetes resource objects for cluster rsync-esk backups 
   * Workload reporting
   * Managing and rectifying cluster state
   * Workload debugging
   * Configuration validation
-  * State of record for disaster recovery
+  * Backups for disaster recovery
 * Health analysis of a newly installed cluster a.k.a 'cluster conformance'
 * ... 
 

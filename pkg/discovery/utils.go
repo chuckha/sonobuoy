@@ -67,3 +67,13 @@ func SerializeArrayObj(objs []interface{}, outpath string, file string) error {
 	}
 	return err
 }
+
+// SerializeObjAppend will serialize an object and append to the end of file
+func SerializeObjAppend(f *os.File, obj interface{}) error {
+	var err error
+	if blob, err := json.Marshal(obj); err == nil {
+		_, err = f.Write(blob)
+		_, err = f.WriteString(",")
+	}
+	return err
+}
