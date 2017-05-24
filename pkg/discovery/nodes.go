@@ -55,7 +55,7 @@ func gatherNodeData(kubeClient kubernetes.Interface, dc *Config) error {
 			return err
 		}
 
-		err = untypedQuery(out, "configz.json", func() (interface{}, error) {
+		_, err = untypedQuery(out, "configz.json", func() (interface{}, error) {
 			var configz map[string]interface{}
 
 			// Get the configz endpoint, put the result in the nodeData
@@ -73,7 +73,7 @@ func gatherNodeData(kubeClient kubernetes.Interface, dc *Config) error {
 			return err
 		}
 
-		err = untypedQuery(out, "healthz.json", func() (interface{}, error) {
+		_, err = untypedQuery(out, "healthz.json", func() (interface{}, error) {
 			// Since health is just an int, we wrap it in a JSON object that looks like
 			// `{"status":200}`
 			health := make(map[string]interface{})
