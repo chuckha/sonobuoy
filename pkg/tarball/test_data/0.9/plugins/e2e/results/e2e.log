@@ -1,0 +1,61 @@
+Oct 11 20:41:21.533: INFO: Overriding default scale value of zero to 1
+Oct 11 20:41:21.533: INFO: Overriding default milliseconds value of zero to 5000
+Running Suite: Kubernetes e2e suite
+===================================
+Random Seed: 1507754481 - Will randomize all specs
+Will run 1 of 693 specs
+
+Oct 11 20:41:21.745: INFO: >>> kubeConfig: 
+Oct 11 20:41:21.748: INFO: Waiting up to 4h0m0s for all (but 0) nodes to be schedulable
+Oct 11 20:41:21.778: INFO: Waiting up to 10m0s for all pods (need at least 0) in namespace 'kube-system' to be running and ready
+Oct 11 20:41:21.855: INFO: 14 / 14 pods in namespace 'kube-system' are running and ready (0 seconds elapsed)
+Oct 11 20:41:21.855: INFO: expected 3 pod replicas in namespace 'kube-system', 3 are Running and Ready.
+Oct 11 20:41:21.858: INFO: Waiting for pods to enter Success, but no pods in "kube-system" match label map[name:e2e-image-puller]
+Oct 11 20:41:21.859: INFO: Dumping network health container logs from all nodes to file /tmp/results/nethealth.txt
+SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS
+------------------------------
+[k8s.io] Pods 
+  should be submitted and removed [Conformance]
+  /go/src/k8s.io/kubernetes/_output/dockerized/go/src/k8s.io/kubernetes/test/e2e/common/pods.go:267
+[BeforeEach] [k8s.io] Pods
+  /go/src/k8s.io/kubernetes/_output/dockerized/go/src/k8s.io/kubernetes/test/e2e/framework/framework.go:133
+STEP: Creating a kubernetes client
+Oct 11 20:41:21.864: INFO: >>> kubeConfig: 
+STEP: Building a namespace api object
+STEP: Waiting for a default service account to be provisioned in namespace
+[BeforeEach] [k8s.io] Pods
+  /go/src/k8s.io/kubernetes/_output/dockerized/go/src/k8s.io/kubernetes/test/e2e/common/pods.go:129
+[It] should be submitted and removed [Conformance]
+  /go/src/k8s.io/kubernetes/_output/dockerized/go/src/k8s.io/kubernetes/test/e2e/common/pods.go:267
+STEP: creating the pod
+STEP: setting up watch
+STEP: submitting the pod to kubernetes
+STEP: verifying the pod is in kubernetes
+STEP: verifying pod creation was observed
+Oct 11 20:41:23.934: INFO: running pod: &v1.Pod{TypeMeta:v1.TypeMeta{Kind:"", APIVersion:""}, ObjectMeta:v1.ObjectMeta{Name:"pod-submit-remove-8a876d87-aec4-11e7-bd2f-12619aecd5af", GenerateName:"", Namespace:"e2e-tests-pods-mtlck", SelfLink:"/api/v1/namespaces/e2e-tests-pods-mtlck/pods/pod-submit-remove-8a876d87-aec4-11e7-bd2f-12619aecd5af", UID:"8a89da2d-aec4-11e7-bb6e-023f6824f0de", ResourceVersion:"6595396", Generation:0, CreationTimestamp:v1.Time{Time:time.Time{sec:63643351281, nsec:0, loc:(*time.Location)(0x5c6b200)}}, DeletionTimestamp:(*v1.Time)(nil), DeletionGracePeriodSeconds:(*int64)(nil), Labels:map[string]string{"name":"foo", "time":"904376184"}, Annotations:map[string]string(nil), OwnerReferences:[]v1.OwnerReference(nil), Initializers:(*v1.Initializers)(nil), Finalizers:[]string(nil), ClusterName:""}, Spec:v1.PodSpec{Volumes:[]v1.Volume{v1.Volume{Name:"default-token-jhknz", VolumeSource:v1.VolumeSource{HostPath:(*v1.HostPathVolumeSource)(nil), EmptyDir:(*v1.EmptyDirVolumeSource)(nil), GCEPersistentDisk:(*v1.GCEPersistentDiskVolumeSource)(nil), AWSElasticBlockStore:(*v1.AWSElasticBlockStoreVolumeSource)(nil), GitRepo:(*v1.GitRepoVolumeSource)(nil), Secret:(*v1.SecretVolumeSource)(0xc421157d00), NFS:(*v1.NFSVolumeSource)(nil), ISCSI:(*v1.ISCSIVolumeSource)(nil), Glusterfs:(*v1.GlusterfsVolumeSource)(nil), PersistentVolumeClaim:(*v1.PersistentVolumeClaimVolumeSource)(nil), RBD:(*v1.RBDVolumeSource)(nil), FlexVolume:(*v1.FlexVolumeSource)(nil), Cinder:(*v1.CinderVolumeSource)(nil), CephFS:(*v1.CephFSVolumeSource)(nil), Flocker:(*v1.FlockerVolumeSource)(nil), DownwardAPI:(*v1.DownwardAPIVolumeSource)(nil), FC:(*v1.FCVolumeSource)(nil), AzureFile:(*v1.AzureFileVolumeSource)(nil), ConfigMap:(*v1.ConfigMapVolumeSource)(nil), VsphereVolume:(*v1.VsphereVirtualDiskVolumeSource)(nil), Quobyte:(*v1.QuobyteVolumeSource)(nil), AzureDisk:(*v1.AzureDiskVolumeSource)(nil), PhotonPersistentDisk:(*v1.PhotonPersistentDiskVolumeSource)(nil), Projected:(*v1.ProjectedVolumeSource)(nil), PortworxVolume:(*v1.PortworxVolumeSource)(nil), ScaleIO:(*v1.ScaleIOVolumeSource)(nil), StorageOS:(*v1.StorageOSVolumeSource)(nil)}}}, InitContainers:[]v1.Container(nil), Containers:[]v1.Container{v1.Container{Name:"nginx", Image:"gcr.io/google-containers/nginx-slim-amd64:0.20", Command:[]string(nil), Args:[]string(nil), WorkingDir:"", Ports:[]v1.ContainerPort(nil), EnvFrom:[]v1.EnvFromSource(nil), Env:[]v1.EnvVar(nil), Resources:v1.ResourceRequirements{Limits:v1.ResourceList(nil), Requests:v1.ResourceList(nil)}, VolumeMounts:[]v1.VolumeMount{v1.VolumeMount{Name:"default-token-jhknz", ReadOnly:true, MountPath:"/var/run/secrets/kubernetes.io/serviceaccount", SubPath:"", MountPropagation:(*v1.MountPropagationMode)(nil)}}, LivenessProbe:(*v1.Probe)(nil), ReadinessProbe:(*v1.Probe)(nil), Lifecycle:(*v1.Lifecycle)(nil), TerminationMessagePath:"/dev/termination-log", TerminationMessagePolicy:"File", ImagePullPolicy:"IfNotPresent", SecurityContext:(*v1.SecurityContext)(nil), Stdin:false, StdinOnce:false, TTY:false}}, RestartPolicy:"Always", TerminationGracePeriodSeconds:(*int64)(0xc4203cbc78), ActiveDeadlineSeconds:(*int64)(nil), DNSPolicy:"ClusterFirst", NodeSelector:map[string]string(nil), ServiceAccountName:"default", DeprecatedServiceAccount:"default", AutomountServiceAccountToken:(*bool)(nil), NodeName:"ip-10-0-15-53.us-west-2.compute.internal", HostNetwork:false, HostPID:false, HostIPC:false, SecurityContext:(*v1.PodSecurityContext)(0xc421157d80), ImagePullSecrets:[]v1.LocalObjectReference(nil), Hostname:"", Subdomain:"", Affinity:(*v1.Affinity)(nil), SchedulerName:"default-scheduler", Tolerations:[]v1.Toleration{v1.Toleration{Key:"node.alpha.kubernetes.io/notReady", Operator:"Exists", Value:"", Effect:"NoExecute", TolerationSeconds:(*int64)(0xc4203cbcc0)}, v1.Toleration{Key:"node.alpha.kubernetes.io/unreachable", Operator:"Exists", Value:"", Effect:"NoExecute", TolerationSeconds:(*int64)(0xc4203cbce0)}}, HostAliases:[]v1.HostAlias(nil), PriorityClassName:"", Priority:(*int32)(nil)}, Status:v1.PodStatus{Phase:"Running", Conditions:[]v1.PodCondition{v1.PodCondition{Type:"Initialized", Status:"True", LastProbeTime:v1.Time{Time:time.Time{sec:0, nsec:0, loc:(*time.Location)(nil)}}, LastTransitionTime:v1.Time{Time:time.Time{sec:63643351281, nsec:0, loc:(*time.Location)(0x5c6b200)}}, Reason:"", Message:""}, v1.PodCondition{Type:"Ready", Status:"True", LastProbeTime:v1.Time{Time:time.Time{sec:0, nsec:0, loc:(*time.Location)(nil)}}, LastTransitionTime:v1.Time{Time:time.Time{sec:63643351282, nsec:0, loc:(*time.Location)(0x5c6b200)}}, Reason:"", Message:""}, v1.PodCondition{Type:"PodScheduled", Status:"True", LastProbeTime:v1.Time{Time:time.Time{sec:0, nsec:0, loc:(*time.Location)(nil)}}, LastTransitionTime:v1.Time{Time:time.Time{sec:63643351281, nsec:0, loc:(*time.Location)(0x5c6b200)}}, Reason:"", Message:""}}, Message:"", Reason:"", HostIP:"10.0.15.53", PodIP:"192.168.118.49", StartTime:(*v1.Time)(0xc420969420), InitContainerStatuses:[]v1.ContainerStatus(nil), ContainerStatuses:[]v1.ContainerStatus{v1.ContainerStatus{Name:"nginx", State:v1.ContainerState{Waiting:(*v1.ContainerStateWaiting)(nil), Running:(*v1.ContainerStateRunning)(0xc420969440), Terminated:(*v1.ContainerStateTerminated)(nil)}, LastTerminationState:v1.ContainerState{Waiting:(*v1.ContainerStateWaiting)(nil), Running:(*v1.ContainerStateRunning)(nil), Terminated:(*v1.ContainerStateTerminated)(nil)}, Ready:true, RestartCount:0, Image:"gcr.io/google-containers/nginx-slim-amd64:0.20", ImageID:"docker-pullable://gcr.io/google-containers/nginx-slim-amd64@sha256:6654db6d4028756062edac466454ee5c9cf9b20ef79e35a81e3c840031eb1e2b", ContainerID:"docker://0b9123a648ecf85999a839b802e9fd79bd52530008b7b56e1fa00552dcbc1173"}}, QOSClass:"BestEffort"}}
+STEP: deleting the pod gracefully
+STEP: verifying the kubelet observed the termination notice
+Oct 11 20:41:28.947: INFO: no pod exists with the name we were looking for, assuming the termination request was observed and completed
+STEP: verifying pod deletion was observed
+[AfterEach] [k8s.io] Pods
+  /go/src/k8s.io/kubernetes/_output/dockerized/go/src/k8s.io/kubernetes/test/e2e/framework/framework.go:134
+Oct 11 20:41:28.950: INFO: Waiting up to 3m0s for all (but 0) nodes to be ready
+STEP: Destroying namespace "e2e-tests-pods-mtlck" for this suite.
+Oct 11 20:41:35.005: INFO: namespace: e2e-tests-pods-mtlck, resource: bindings, ignored listing per whitelist
+Oct 11 20:41:35.075: INFO: namespace e2e-tests-pods-mtlck deletion completed in 6.121824521s
+
+• [SLOW TEST:13.211 seconds]
+[k8s.io] Pods
+/go/src/k8s.io/kubernetes/_output/dockerized/go/src/k8s.io/kubernetes/test/e2e/framework/framework.go:629
+  should be submitted and removed [Conformance]
+  /go/src/k8s.io/kubernetes/_output/dockerized/go/src/k8s.io/kubernetes/test/e2e/common/pods.go:267
+------------------------------
+SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSOct 11 20:41:35.077: INFO: Running AfterSuite actions on all node
+Oct 11 20:41:35.077: INFO: Running AfterSuite actions on node 1
+Oct 11 20:41:35.077: INFO: Dumping logs locally to: /tmp/results
+Checking for custom logdump instances, if any
+Sourcing kube-util.sh
+Oct 11 20:41:35.100: INFO: Error running cluster/log-dump/log-dump.sh: exit status 1
+
+Ran 1 of 693 Specs in 13.355 seconds
+SUCCESS! -- 1 Passed | 0 Failed | 0 Pending | 692 Skipped PASS
