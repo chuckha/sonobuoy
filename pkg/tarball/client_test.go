@@ -21,7 +21,19 @@ func tarballData(t *testing.T, version string) *os.File {
 	return file
 }
 
-func TestVersion(t *testing.T) {
+func TestNodes(t *testing.T) {
+	file := tarballData(t, v9)
+	defer file.Close()
+	client, err := tarball.New(file)
+	if err != nil {
+		t.Fatalf("could not make a new client: %v", err)
+	}
+	if len(client.Nodes()) != 3 {
+		t.Fatalf("could not figure out Sonobuoy version")
+	}
+}
+
+func TestConfigVersion(t *testing.T) {
 	testcases := []struct {
 		name      string
 		sbVersion string
