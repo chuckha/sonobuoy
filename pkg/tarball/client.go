@@ -1,52 +1,76 @@
 package tarball
 
 import (
+	"archive/tar"
 	"bytes"
+	"compress/gzip"
+	"encoding/json"
 	"io"
 )
 
-type K8sVersion struct {
-	gitVersion string `json:"gitVersion"`
+type SonobuoyData interface {
+	Config
 }
-func NewK8sVersion(serverVersionFile []byte) {}
 
-type ServerVersion interface {
+type Config interface {
 	Version() string
 }
 
-
-
-
-type Plugin interface {
-	// Files can be used to see which files the Plugin exposes
-	Name() string
+// config is the config.json object (the sonobuoy configuration used for this particular run)
+type config struct {
+	SonobuoyVersion string `json:"Version"`
 }
 
-type E2EPlugin struct {
-	name string
-}
-func (e *E2EPlugin) Name() string {
-	return "e2e"
-}
-func (e *E2EPlugin) Results() *TestResults {
-	// unmarshal the results file into a TestResults object
-}
-func (e *E2EPlugin) Logs() *TestResultLog {
-	// unmarshal the e2e.logs file
+func (c *config) Version() string {
+	return c.SonobuoyVersion
 }
 
-type SonobuoyData interface {
-	// Get a list of plugins that this Sonobuoy run was configured with
-	Plugins() []Plugin
-	ServerVersion() ServerVersion
+type client struct {
+	config
 }
 
-func New(reader io.Reader) SonobuoyData {
-	// 1. read in the tarball and find the version
+func (c *client) WithConfig(data []byte) error {
+	return json.Unmarshal(data, &c.config)
+}
+
+// client's implementation of SonobuoyData
+// client.config implements Config
+
+func New(reader io.Reader) (SonobuoyData, error) {
+	client := &client{}
+	// 0. Setup
+	gz, err := gzip.NewReader(reader)
+	if err != nil {
+		return nil, err
+	}
+	tarReader := tar.NewReader(gz)
+	// 1. Read through it and grab the files we care about
+	for {
+		header, err := tarReader.Next()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			return nil, err
+		}
+
+		if isConfigFile(header.Name) {
+			var buf bytes.Buffer
+			_, err := io.Copy(&buf, tarReader)
+			if err != nil {
+				return nil, err
+			}
+			err = client.WithConfig(buf.Bytes())
+			if err != nil {
+				return nil, err
+			}
+		}
+	}
+
 	// 2. read the tarball a file-at-a-time and populate various structs
-	return &tarball{...}
+	return client, nil
 }
 
-func getTarballFromS3() io.Reader {
-	bytes.NewReader([]byte("somebytedatagoeshere"))
+func isConfigFile(filename string) bool {
+	return filename == "config.json" || filename == "meta/config.json"
 }
