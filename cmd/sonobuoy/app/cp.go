@@ -46,7 +46,15 @@ func init() {
 
 func copyResults(cmd *cobra.Command, args []string) {
 	code := 0
-	if err := ops.CopyResults(path); err != nil {
+	src := ops.FileSpec{
+		PodNamespace: "heptio-sonobuoy",
+		PodName: "sonobuoy",
+		File: "/tmp/sonobuoy",
+	}
+	dst := ops.FileSpec{
+		File: "./archive",
+	}
+	if err := ops.CopyResults(os.Stderr, src, dst); err != nil {
 		errlog.LogError(errors.Wrap(err, "error attempting to copy sonobuoy results"))
 		code = 1
 	}

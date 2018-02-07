@@ -22,30 +22,29 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"os/user"
 	"path"
 	"path/filepath"
 	"strings"
 
-	"github.com/heptio/sonobuoy/cmd/sonobuoy/app/utils"
-	"k8s.io/client-go/kubernetes"
 	"k8s.io/kubernetes/pkg/kubectl/cmd"
+	cmdutil "k8s.io/kubernetes/pkg/kubectl/cmd/util"
 )
 
-type fileSpec struct {
+type FileSpec struct {
 	PodNamespace string
 	PodName      string
 	File         string
 }
 
-func CopyResults(cmderr io.Writer, src, dst fileSpec) error {
-	config, err := utils.GetConfig()
+func CopyResults(cmderr io.Writer, src, dest FileSpec) error {
+	f := cmdutil.NewFactory(nil)
+	config, err := f.ClientConfig()
 	if err != nil {
-		return fmt.Errorf("could not build config from kubeconfig: %v", err)
+		return fmt.Errorf("could not get client config: %v", err)
 	}
-	clientset, err := kubernetes.NewForConfig(config)
+	clientset, err := f.ClientSet()
 	if err != nil {
-		return fmt.Errorf("could not make a new clientset from config: %v", err)
+		return fmt.Errorf("could not make a new clientset: %v", err)
 	}
 
 	reader, outStream := io.Pipe()
@@ -70,34 +69,12 @@ func CopyResults(cmderr io.Writer, src, dst fileSpec) error {
 
 		defer outStream.Close()
 
-		if err := options.Validate(); err != nil {
-			return err
-		}
-
-		if err := options.Run(); err != nil {
-			return err
-		}
+		options.Validate()
+		options.Run()
 	}()
 	prefix := strings.TrimLeft(src.File, "/")
 	prefix = path.Clean(prefix)
 	return untarAll(reader, dest.File, prefix)
-}
-
-func locateKubeconfig() string {
-	kubeconfig := os.Getenv("KUBECONFIG")
-	if kubeconfig == "" {
-		u, err := user.Current()
-		if err != nil {
-			return ""
-		}
-		kubeconfig = filepath.Join(u.HomeDir, ".kube", "config")
-		// make sure this file exists
-		_, err = os.Stat(kubeconfig)
-		if err != nil {
-			return ""
-		}
-	}
-	return kubeconfig
 }
 
 func untarAll(reader io.Reader, destFile, prefix string) error {
