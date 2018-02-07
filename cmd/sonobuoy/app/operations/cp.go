@@ -142,3 +142,15 @@ func untarAll(reader io.Reader, destFile, prefix string) error {
 	}
 	return nil
 }
+
+// dirExists checks if a path exists and is a directory.
+func dirExists(path string) (bool, error) {
+	fi, err := os.Stat(path)
+	if err == nil && fi.IsDir() {
+		return true, nil
+	}
+	if os.IsNotExist(err) {
+		return false, nil
+	}
+	return false, err
+}
