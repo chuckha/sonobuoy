@@ -41,6 +41,9 @@ func init() {
 	RootCmd.AddCommand(cmd)
 }
 
+// copy from namespace heptio-sonobuoy from pod sonobuoy dir /tmp/sonobuoy to local ./archive file
+// kubectl cp heptio-sonobuoy/sonobuoy:/tmp/sonobuoy ./archive --namespace=heptio-sonobuoy
+
 func copyResults(cmd *cobra.Command, args []string) {
 	code := 0
 	if err := ops.CopyResults(path); err != nil {

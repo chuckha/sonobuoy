@@ -1,12 +1,14 @@
 package utils
 
 import (
+	"fmt"
 	"os"
 	"os/user"
 	"path/filepath"
 
 	"github.com/pkg/errors"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 )
 
@@ -17,19 +19,24 @@ const (
 // OutOfClusterClient returns a kubernetes client that is accessing the
 // cluster from outside the cluster.
 func OutOfClusterClient() (kubernetes.Interface, error) {
+	config, err := GetConfig()
+	if err != nil {
+		return nil, fmt.Errorf("could not build config from kubeconfig: %v", err)
+	}
+	clientset, err := kubernetes.NewForConfig(config)
+	if err != nil {
+		return nil, fmt.Errorf("could not make a new clientset from config: %v", err)
+	}
+	return clientset, nil
+}
+
+// GetConfig returns a kubernetes client.
+func GetConfig() (*rest.Config, error) {
 	kubeconfig := locateKubeconfig()
 	if len(kubeconfig) == 0 {
 		return nil, errors.New("Could not locate kubeconfig")
 	}
-	config, err := clientcmd.BuildConfigFromFlags("", kubeconfig)
-	if err != nil {
-		return nil, errors.Wrap(err, "could not build config from kubeconfig")
-	}
-	clientset, err := kubernetes.NewForConfig(config)
-	if err != nil {
-		return nil, errors.Wrap(err, "could not make a new clientset from config")
-	}
-	return clientset, nil
+	return clientcmd.BuildConfigFromFlags("", kubeconfig)
 }
 
 func locateKubeconfig() string {
