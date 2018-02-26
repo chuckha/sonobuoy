@@ -23,15 +23,15 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
-	ops "github.com/heptio/sonobuoy/pkg/client"
+	"github.com/heptio/sonobuoy/pkg/client"
 	"github.com/heptio/sonobuoy/pkg/errlog"
 )
 
-var genopts ops.GenConfig
+var genopts client.GenConfig
 
 var genFlags struct {
 	sonobuoyConfig SonobuoyConfig
-	mode           ops.Mode
+	mode           client.Mode
 }
 
 // GenCommand is exported so it can be extended.
@@ -53,7 +53,7 @@ func init() {
 }
 
 // AddGenFlags adds generation flags to a command.
-func AddGenFlags(gen *ops.GenConfig, cmd *cobra.Command) {
+func AddGenFlags(gen *client.GenConfig, cmd *cobra.Command) {
 	AddNamespaceFlag(&gen.Namespace, cmd)
 	AddSonobuoyImage(&gen.Image, cmd)
 }
@@ -68,7 +68,7 @@ func genManifest(cmd *cobra.Command, args []string) {
 	}
 	genopts.E2EConfig = e2ecfg
 
-	bytes, err := ops.NewSonobuoyClient().GenerateManifest(&genopts)
+	bytes, err := client.NewSonobuoy().GenerateManifest(&genopts)
 
 	if err == nil {
 		fmt.Printf("%s\n", bytes)

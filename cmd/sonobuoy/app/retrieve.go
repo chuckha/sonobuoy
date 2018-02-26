@@ -91,7 +91,7 @@ func retrieveResults(cmd *cobra.Command, args []string) {
 	}
 
 	// Get a reader that contains the tar output of the results directory.
-	reader := client.NewSonobuoyClient().RetrieveResults(cfg, restConfig)
+	reader := client.NewSonobuoy().RetrieveResults(cfg, restConfig)
 
 	// RetrieveResults bailed early and will report an error.
 	if reader == nil {

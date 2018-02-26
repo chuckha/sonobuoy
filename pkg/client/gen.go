@@ -37,7 +37,7 @@ type templateValues struct {
 }
 
 // GenerateManifest fills in a template with a Sonobuoy config
-func (c *SonobuoyClient) GenerateManifest(cfg *GenConfig) ([]byte, error) {
+func (c *Sonobuoy) GenerateManifest(cfg *GenConfig) ([]byte, error) {
 	marshalledConfig, err := json.Marshal(cfg.Config)
 	if err != nil {
 		return nil, errors.Wrap(err, "couldn't marshall selector")

@@ -34,7 +34,7 @@ import (
 	"k8s.io/client-go/tools/remotecommand"
 )
 
-func (c *SonobuoyClient) RetrieveResults(cfg *RetrieveConfig, restConfig *rest.Config) io.Reader {
+func (c *Sonobuoy) RetrieveResults(cfg *RetrieveConfig, restConfig *rest.Config) io.Reader {
 	clientset, err := kubernetes.NewForConfig(restConfig)
 	if err != nil {
 		cfg.Errc <- fmt.Errorf("unable to create clientset: %v", err)

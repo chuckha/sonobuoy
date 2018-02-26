@@ -36,7 +36,7 @@ import (
 
 const bufferSize = 4096
 
-func (c *SonobuoyClient) Run(cfg *RunConfig, restConfig *rest.Config) error {
+func (c *Sonobuoy) Run(cfg *RunConfig, restConfig *rest.Config) error {
 	manifest, err := c.GenerateManifest(&cfg.GenConfig)
 	if err != nil {
 		return errors.Wrap(err, "couldn't run invalid manifest")

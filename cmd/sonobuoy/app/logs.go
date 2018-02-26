@@ -24,11 +24,11 @@ import (
 	"github.com/spf13/cobra"
 	"k8s.io/client-go/kubernetes"
 
-	ops "github.com/heptio/sonobuoy/pkg/client"
+	"github.com/heptio/sonobuoy/pkg/client"
 	"github.com/heptio/sonobuoy/pkg/errlog"
 )
 
-var logConfig ops.LogConfig
+var logConfig client.LogConfig
 var logsKubecfg Kubeconfig
 
 func init() {
@@ -60,7 +60,7 @@ func getLogs(cmd *cobra.Command, args []string) {
 		errlog.LogError(fmt.Errorf("failed to get kubernetes client: %v", err))
 		os.Exit(1)
 	}
-	if err := ops.NewSonobuoyClient().GetLogs(&logConfig, kubeClient); err != nil {
+	if err := client.NewSonobuoy().GetLogs(&logConfig, kubeClient); err != nil {
 		errlog.LogError(errors.Wrap(err, "error attempting to get sonobuoy logs"))
 		os.Exit(1)
 	}

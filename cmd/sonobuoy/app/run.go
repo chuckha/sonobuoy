@@ -22,15 +22,15 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
-	ops "github.com/heptio/sonobuoy/pkg/client"
+	"github.com/heptio/sonobuoy/pkg/client"
 	"github.com/heptio/sonobuoy/pkg/errlog"
 )
 
-var runopts ops.RunConfig
+var runopts client.RunConfig
 
 var runFlags struct {
 	sonobuoyConfig SonobuoyConfig
-	mode           ops.Mode
+	mode           client.Mode
 	kubecfg        Kubeconfig
 }
 
@@ -66,7 +66,7 @@ func submitSonobuoyRun(cmd *cobra.Command, args []string) {
 	genopts.E2EConfig = e2ecfg
 
 	// TODO(timothysc) Need to add checks which include (detection-rbac, preflight-DNS, ...)
-	if err := ops.NewSonobuoyClient().Run(&runopts, restConfig); err != nil {
+	if err := client.NewSonobuoy().Run(&runopts, restConfig); err != nil {
 		errlog.LogError(errors.Wrap(err, "error attempting to run sonobuoy"))
 		os.Exit(1)
 	}

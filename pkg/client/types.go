@@ -62,16 +62,16 @@ type RetrieveConfig struct {
 	Namespace string
 }
 
-// SonobuoyClient is a high-level interface to Sonobuoy operations.
-type SonobuoyClient struct{}
+// Sonobuoy is a struct that implements the sonobuoy client interface.
+type Sonobuoy struct{}
 
-// NewSonobuoyClient creates a new SonobuoyClient
-func NewSonobuoyClient() *SonobuoyClient {
-	return &SonobuoyClient{}
+// NewSonobuoy creates a new SonobuoyClient
+func NewSonobuoy() *Sonobuoy {
+	return &Sonobuoy{}
 }
 
 // Make sure SonobuoyClient implements the interface
-var _ Interface = &SonobuoyClient{}
+var _ Interface = &Sonobuoy{}
 
 // Interface is the main contract that we will give to external consumers of this library
 // This will provide a consistent look/feel to upstream and allow us to expose sonobuoy behavior
